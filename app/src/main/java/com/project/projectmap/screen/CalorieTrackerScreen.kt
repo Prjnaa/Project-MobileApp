@@ -41,13 +41,13 @@ fun CalorieTrackerScreen() {
             BunnyImage()
         }
         item {
-            CalorieProgress() // Kurangi jarak antar elemen
+            CalorieProgress()
         }
         item {
-            TrackEatButton() // Sesuaikan tombol Track Eat
+            TrackEatButton()
         }
         item {
-            SetNewTarget() // Tambahkan teks set new target
+            SetNewTarget()
         }
         item {
             ChallengesSection()
@@ -61,21 +61,21 @@ fun TopBar() {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween, // Jarak merata antara ikon
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Fire Icon with Points
         IconWithArrowAndPoints(
-            iconRes = R.drawable.fire_icon, // Ganti dengan ID resource untuk ikon api
+            iconRes = R.drawable.fire_icon,
             contentDescription = "Fire",
-            points = 1200 // Jumlah poin api
+            points = 1200
         )
 
         // Coin Icon with Points
         IconWithArrowAndPoints(
-            iconRes = R.drawable.coin_icon, // Ganti dengan ID resource untuk ikon koin
+            iconRes = R.drawable.coin_icon,
             contentDescription = "Coin",
-            points = 350 // Jumlah poin koin
+            points = 350
         )
     }
 }
@@ -87,14 +87,13 @@ fun IconWithArrowAndPoints(iconRes: Int, contentDescription: String, points: Int
             .wrapContentSize()
             .padding(horizontal = 8.dp),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFE0B0FF)) // Warna ungu muda
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFE0B0FF))
     ) {
         Row(
             modifier = Modifier
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Ikon (misalnya api atau koin)
             Icon(
                 painter = painterResource(id = iconRes),
                 contentDescription = contentDescription,
@@ -103,9 +102,8 @@ fun IconWithArrowAndPoints(iconRes: Int, contentDescription: String, points: Int
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Teks Poin
             Text(
-                text = "$points",  // Menampilkan poin
+                text = "$points",
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
                 color = Color.Black
@@ -113,12 +111,11 @@ fun IconWithArrowAndPoints(iconRes: Int, contentDescription: String, points: Int
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Ikon panah ke kanan
             Icon(
                 painter = painterResource(id = R.drawable.ic_arrow_right), // Ikon panah kanan
                 contentDescription = "Arrow",
                 modifier = Modifier.size(16.dp),
-                tint = Color.Gray // Warna panah
+                tint = Color.Gray
             )
         }
     }
@@ -140,7 +137,7 @@ fun BunnyImage() {
 
 @Composable
 fun CalorieProgress(
-    progress: Float = 0.5f,  // progress antara 0 hingga 1
+    progress: Float = 0.5f,
     totalCalories: Int = 2000,
     currentCalories: Int = 1000
 ) {
@@ -151,18 +148,18 @@ fun CalorieProgress(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(1f) // Menggunakan rasio aspek 2f untuk proporsi lebih baik
-            .padding(vertical = 0.dp) // Kurangi padding untuk mendekatkan elemen
+            .aspectRatio(1f)
+            .padding(vertical = 0.dp)
     ) {
         Canvas(
-            modifier = Modifier.fillMaxSize(0.8f) // Menyesuaikan ukuran speedometer
+            modifier = Modifier.fillMaxSize(0.8f)
         ) {
             drawArc(
                 color = Color.LightGray,
                 startAngle = 180f,
                 sweepAngle = 180f,
                 useCenter = false,
-                style = Stroke(width = 30.dp.toPx()) // Ketebalan arc
+                style = Stroke(width = 30.dp.toPx())
             )
 
             drawArc(
@@ -170,18 +167,18 @@ fun CalorieProgress(
                 startAngle = 180f,
                 sweepAngle = sweepAngle,
                 useCenter = false,
-                style = Stroke(width = 30.dp.toPx()) // Ketebalan arc progress
+                style = Stroke(width = 30.dp.toPx())
             )
         }
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.offset(y = (-50).dp)  // Kurangi offset untuk mendekatkan teks
+            modifier = Modifier.offset(y = (-50).dp)
         ) {
             Text(
                 text = "$currentCalories",
-                fontSize = 40.sp,  // Ukuran teks sedikit lebih kecil
+                fontSize = 40.sp,
                 fontWeight = FontWeight.Bold,
                 color = color
             )
@@ -199,7 +196,6 @@ fun TrackEatButton() {
     val context = LocalContext.current
     Button(
         onClick = {
-            // Intent untuk memulai CameraActivity
             val intent = Intent(context, MainActivity::class.java)
             context.startActivity(intent) // Memulai aktivitas Camera
         },

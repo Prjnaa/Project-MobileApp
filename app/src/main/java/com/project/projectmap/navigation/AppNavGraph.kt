@@ -37,7 +37,10 @@ fun AppNavGraph(navController: NavHostController = rememberNavController()) {
         composable(AppDestinations.REGISTER_ROUTE) {
             RegisterScreen(
                 onRegisterSuccess = {
-                    navController.popBackStack()
+                    navController.popBackStack() // Kembali ke login screen setelah registrasi sukses
+                },
+                onNavigateToLogin = {
+                    navController.popBackStack(AppDestinations.LOGIN_ROUTE, false) // Kembali ke login jika di klik tombol login
                 }
             )
         }

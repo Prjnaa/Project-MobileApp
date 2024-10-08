@@ -11,7 +11,7 @@ import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.tasks.await
 
 @Composable
-fun RegisterScreen(onRegisterSuccess: () -> Unit) {
+fun RegisterScreen(onRegisterSuccess: () -> Unit, onNavigateToLogin: () -> Unit) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
@@ -60,7 +60,8 @@ fun RegisterScreen(onRegisterSuccess: () -> Unit) {
                 auth.createUserWithEmailAndPassword(email, password)
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
-                            onRegisterSuccess() // Arahkan ke halaman login
+                            onRegisterSuccess() // Arahkan ke halaman setelah registrasi berhasil
+                            onNavigateToLogin() // Arahkan ke halaman login
                         } else {
                             errorMessage = task.exception?.message
                         }
@@ -76,6 +77,12 @@ fun RegisterScreen(onRegisterSuccess: () -> Unit) {
 
         errorMessage?.let {
             Text(text = it, color = MaterialTheme.colorScheme.error)
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        TextButton(onClick = { onNavigateToLogin() }) {
+            Text(text = "Already have an account? Login")
         }
     }
 }
