@@ -49,6 +49,8 @@ android {
     }
 }
 
+
+
 dependencies {
 
     implementation(libs.androidx.core.ktx)
@@ -66,4 +68,18 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    dependencies {
+        // The following line is optional, as the core library is included indirectly by camera-camera2
+        implementation(libs.androidx.camera.core)
+        implementation(libs.androidx.camera.camera2)
+        // If you want to additionally use the CameraX Lifecycle library
+        implementation(libs.androidx.camera.lifecycle)
+        // If you want to additionally use the CameraX View class
+        implementation(libs.androidx.camera.view)
+        // If you want to additionally add CameraX ML Kit Vision Integration
+        implementation(libs.androidx.camera.mlkit.vision)
+        // If you want to additionally use the CameraX Extensions library
+        implementation(libs.androidx.camera.extensions)
+    }
 }

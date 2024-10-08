@@ -1,5 +1,6 @@
 package com.project.projectmap.screen
 
+import android.content.Intent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -12,12 +13,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.project.projectmap.R
+import com.project.projectmap.scanKamera.MainActivity
 
 @Composable
 fun CalorieTrackerScreen() {
@@ -193,8 +196,13 @@ fun CalorieProgress(
 
 @Composable
 fun TrackEatButton() {
+    val context = LocalContext.current
     Button(
-        onClick = { /* TODO */ },
+        onClick = {
+            // Intent untuk memulai CameraActivity
+            val intent = Intent(context, MainActivity::class.java)
+            context.startActivity(intent) // Memulai aktivitas Camera
+        },
         modifier = Modifier
             .fillMaxWidth()
             .height(48.dp)
