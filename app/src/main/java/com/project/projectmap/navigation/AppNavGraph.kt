@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.project.projectmap.loginRegister.LoginScreen
 import com.project.projectmap.loginRegister.RegisterScreen
+import com.project.projectmap.navigation.AppDestinations
 import com.project.projectmap.screen.CalorieTrackerScreen
 
 object AppDestinations {
