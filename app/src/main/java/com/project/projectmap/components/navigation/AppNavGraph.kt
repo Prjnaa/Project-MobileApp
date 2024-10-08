@@ -1,14 +1,13 @@
-package com.project.projectmap.navigation
+package com.project.projectmap.components.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.project.projectmap.loginRegister.LoginScreen
-import com.project.projectmap.loginRegister.RegisterScreen
-import com.project.projectmap.navigation.AppDestinations
-import com.project.projectmap.screen.CalorieTrackerScreen
+import com.project.projectmap.ui.screens.auth.login.LoginScreen
+import com.project.projectmap.ui.screens.auth.register.RegisterScreen
+import com.project.projectmap.ui.screens.main.CalorieTrackerScreen
 
 object AppDestinations {
     const val LOGIN_ROUTE = "login"

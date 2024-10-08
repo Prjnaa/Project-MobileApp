@@ -1,4 +1,4 @@
-package com.project.projectmap.screen
+package com.project.projectmap.ui.screens.main
 
 import android.content.Intent
 import androidx.compose.foundation.Canvas
@@ -20,7 +20,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.project.projectmap.R
-import com.project.projectmap.scanKamera.MainActivity
+import com.project.projectmap.ui.screens.camera.MainActivity
 
 @Composable
 fun CalorieTrackerScreen() {

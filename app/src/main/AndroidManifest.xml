@@ -30,7 +30,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".scanKamera.MainActivity" />
+        <activity android:name=".ui.screens.camera.MainActivity" />
     </application>
 
 </manifest>

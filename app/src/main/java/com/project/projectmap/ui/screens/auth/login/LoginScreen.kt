@@ -1,4 +1,4 @@
-package com.project.projectmap.loginRegister
+package com.project.projectmap.ui.screens.auth.login
 
 import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult

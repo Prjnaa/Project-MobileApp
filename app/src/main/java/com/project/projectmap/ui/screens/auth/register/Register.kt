@@ -1,4 +1,4 @@
-package com.project.projectmap.loginRegister
+package com.project.projectmap.ui.screens.auth.register
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -8,7 +8,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.tasks.await
 
 @Composable
 fun RegisterScreen(onRegisterSuccess: () -> Unit, onNavigateToLogin: () -> Unit) {
