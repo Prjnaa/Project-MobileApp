@@ -19,8 +19,28 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.firestore.FirebaseFirestore
 import com.project.projectmap.R
 import com.project.projectmap.ui.screens.camera.MainActivity
+
+
+fun saveCaloriesToDatabase(currentCalories: Int, totalCalories: Int) {
+    val db = FirebaseFirestore.getInstance()
+    val caloriesData = hashMapOf(
+        "currentCalories" to currentCalories,
+        "totalCalories" to totalCalories,
+        "timestamp" to System.currentTimeMillis()
+    )
+
+    db.collection("calories")
+        .add(caloriesData)
+        .addOnSuccessListener { documentReference ->
+            println("Calories saved with ID: ${documentReference.id}")
+        }
+        .addOnFailureListener { e ->
+            println("Error saving calories: $e")
+        }
+}
 
 @Composable
 fun CalorieTrackerScreen() {
@@ -187,6 +207,17 @@ fun CalorieProgress(
                 fontSize = 16.sp,
                 color = Color.Black
             )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = {
+
+                    saveCaloriesToDatabase(currentCalories, totalCalories)
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0B0FF)),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Save Calories", color = Color.White)
+            }
         }
     }
 }
