@@ -5,23 +5,28 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.project.projectmap.R
 import com.project.projectmap.ui.screens.camera.MainActivity
+import com.project.projectmap.ui.theme.Purple40
+import com.project.projectmap.ui.theme.Purple80
 
 
 fun saveCaloriesToDatabase(currentCalories: Int, totalCalories: Int) {
@@ -43,101 +48,151 @@ fun saveCaloriesToDatabase(currentCalories: Int, totalCalories: Int) {
 }
 
 @Composable
+@Preview
 fun CalorieTrackerScreen() {
-    LazyColumn(
+    // Wrap entire content in a scrollable column
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
+            .verticalScroll(rememberScrollState()) // Main scroll for entire screen
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp) // Kurangi jarak antar elemen
+        verticalArrangement = Arrangement.Top
     ) {
-        item {
-            TopBar()
-        }
-        item {
-            MacronutrientRow()
-        }
-        item {
-            BunnyImage()
-        }
-        item {
-            CalorieProgress()
-        }
-        item {
-            TrackEatButton()
-        }
-        item {
-            SetNewTarget()
-        }
-        item {
-            ChallengesSection()
-        }
+        // User Info Bar
+        UserInfoBar()
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Macronutrient Progress
+        MacronutrientRow()
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Bunny Image
+        BunnyImage()
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Calorie Progress
+        CalorieProgress(
+            progress = 0.53f,
+            totalCalories = 2000,
+            currentCalories = 1057
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Track Eat Button
+        TrackEatButton()
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Set New Target Text
+        SetNewTarget()
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Daily Challenges with fixed height
+        DailyChallenges()
+
+        // Add bottom spacing to ensure content doesn't get cut off
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
 @Composable
-fun TopBar() {
+fun UserInfoBar() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .background(
+                color = Color(0xFFF3E5F5),
+                shape = RoundedCornerShape(50.dp)
+            )
+            .padding(8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Fire Icon with Points
-        IconWithArrowAndPoints(
-            iconRes = R.drawable.fire_icon,
-            contentDescription = "Fire",
-            points = 1200
-        )
+        // User Info
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.profile_icon),
+                contentDescription = "Profile",
+                modifier = Modifier.size(24.dp),
+                tint = Color.Unspecified
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Hosea",
+                style = MaterialTheme.typography.titleMedium
+            )
+        }
 
-        // Coin Icon with Points
-        IconWithArrowAndPoints(
-            iconRes = R.drawable.coin_icon,
-            contentDescription = "Coin",
-            points = 350
-        )
+        // Points
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.fire_icon),
+                contentDescription = "Fire points",
+                modifier = Modifier.size(20.dp)
+            )
+            Text(text = "2", modifier = Modifier.padding(horizontal = 4.dp))
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Icon(
+                painter = painterResource(id = R.drawable.coin_icon),
+                contentDescription = "Coins",
+                modifier = Modifier.size(20.dp)
+            )
+            Text(text = "250", modifier = Modifier.padding(horizontal = 4.dp))
+        }
     }
 }
 
 @Composable
-fun IconWithArrowAndPoints(iconRes: Int, contentDescription: String, points: Int) {
-    Card(
-        modifier = Modifier
-            .wrapContentSize()
-            .padding(horizontal = 8.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFE0B0FF))
+fun MacronutrientRow() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Row(
-            modifier = Modifier
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
+        MacronutrientItem("Carb", 0.65f, Color(0xFF8B80F9))
+        MacronutrientItem("Protein", 0.45f, Color(0xFF8B80F9))
+        MacronutrientItem("Fat", 0.30f, Color(0xFF8B80F9))
+    }
+}
+
+@Composable
+fun MacronutrientItem(name: String, progress: Float, color: Color) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.width(80.dp)
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.size(70.dp)
         ) {
-            Icon(
-                painter = painterResource(id = iconRes),
-                contentDescription = contentDescription,
-                modifier = Modifier.size(24.dp)
+            CircularProgressIndicator(
+                progress = progress,
+                modifier = Modifier.fillMaxSize(),
+                color = color,
+                strokeWidth = 8.dp
             )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
             Text(
-                text = "$points",
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                color = Color.Black
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Icon(
-                painter = painterResource(id = R.drawable.ic_arrow_right), // Ikon panah kanan
-                contentDescription = "Arrow",
-                modifier = Modifier.size(16.dp),
-                tint = Color.Gray
+                text = "${(progress * 100).toInt()}%",
+                style = MaterialTheme.typography.labelMedium
             )
         }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = name,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 
@@ -149,74 +204,87 @@ fun BunnyImage() {
     ) {
         Image(
             painter = painterResource(id = R.drawable.bunny),
-            contentDescription = "Cute bunny",
-            modifier = Modifier.size(180.dp) // Ukuran gambar Bunny tetap
+            contentDescription = "Cute bunny with carrot",
+            modifier = Modifier.size(160.dp)
         )
     }
 }
 
 @Composable
 fun CalorieProgress(
-    progress: Float = 0.5f,
-    totalCalories: Int = 2000,
-    currentCalories: Int = 1000
+    progress: Float,
+    totalCalories: Int,
+    currentCalories: Int,
+    modifier: Modifier = Modifier
 ) {
-    val sweepAngle = 180 * progress
-    val color = Color(0xFFE0B0FF)
-
     Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .aspectRatio(1f)
-            .padding(vertical = 0.dp)
+            .height(160.dp)
+            .padding(horizontal = 32.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Canvas(
-            modifier = Modifier.fillMaxSize(0.8f)
+        // Container for both arc and text to ensure proper layering
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp),
+            contentAlignment = Alignment.Center
         ) {
-            drawArc(
-                color = Color.LightGray,
-                startAngle = 180f,
-                sweepAngle = 180f,
-                useCenter = false,
-                style = Stroke(width = 30.dp.toPx())
-            )
-
-            drawArc(
-                color = color,
-                startAngle = 180f,
-                sweepAngle = sweepAngle,
-                useCenter = false,
-                style = Stroke(width = 30.dp.toPx())
-            )
-        }
-
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.offset(y = (-50).dp)
-        ) {
-            Text(
-                text = "$currentCalories",
-                fontSize = 40.sp,
-                fontWeight = FontWeight.Bold,
-                color = color
-            )
-            Text(
-                text = "of $totalCalories calories",
-                fontSize = 16.sp,
-                color = Color.Black
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = {
-
-                    saveCaloriesToDatabase(currentCalories, totalCalories)
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0B0FF)),
-                shape = RoundedCornerShape(12.dp)
+            // Progress Arc
+            Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
             ) {
-                Text("Save Calories", color = Color.White)
+                val thickness = 32.dp.toPx()
+                val startAngle = 180f
+                val sweepAngle = 180f
+
+                // Draw background arc
+                drawArc(
+                    color = Purple80,
+                    startAngle = startAngle,
+                    sweepAngle = sweepAngle,
+                    useCenter = false,
+                    style = Stroke(width = thickness),
+                    size = size.copy(height = size.height * 2)
+                )
+
+                // Draw progress arc
+                drawArc(
+                    color = Purple40,
+                    startAngle = startAngle,
+                    sweepAngle = sweepAngle * progress,
+                    useCenter = false,
+                    style = Stroke(width = thickness),
+                    size = size.copy(height = size.height * 2)
+                )
+            }
+
+            // Calorie text positioned exactly in the center
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .offset(y = 20.dp) // Adjusted to be more centered within the arc
+            ) {
+                Text(
+                    text = String.format("%.1f", currentCalories.toFloat()),
+                    style = MaterialTheme.typography.displayMedium.copy(
+                        fontSize = 40.sp,
+                        fontWeight = FontWeight.Normal,
+                        textAlign = TextAlign.Center
+                    ),
+                    color = Color(0xFF8B80F9)
+                )
+                Text(
+                    text = "of $totalCalories calories",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontSize = 14.sp,
+                        color = Color.Gray,
+                        textAlign = TextAlign.Center
+                    )
+                )
             }
         }
     }
@@ -228,28 +296,17 @@ fun TrackEatButton() {
     Button(
         onClick = {
             val intent = Intent(context, MainActivity::class.java)
-            context.startActivity(intent) // Memulai aktivitas Camera
+            context.startActivity(intent)
         },
         modifier = Modifier
             .fillMaxWidth()
-            .height(48.dp)
-            .padding(horizontal = 32.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0B0FF)),
-        shape = RoundedCornerShape(12.dp)
+            .height(48.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Purple80
+        ),
+        shape = RoundedCornerShape(24.dp)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_add),
-                contentDescription = "Add",
-                modifier = Modifier.size(16.dp),
-                tint = Color.White
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Track Eat", color = Color.White, fontSize = 16.sp)
-        }
+        Text("Track Eat")
     }
 }
 
@@ -257,129 +314,124 @@ fun TrackEatButton() {
 fun SetNewTarget() {
     Text(
         text = "set new target",
-        fontSize = 14.sp,
-        color = Color.Gray,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp),
-        textAlign = TextAlign.Center
+        modifier = Modifier.fillMaxWidth(),
+        textAlign = TextAlign.Center,
+        style = MaterialTheme.typography.bodyMedium,
+        color = Color.Gray
     )
 }
 
 @Composable
-fun MacronutrientRow() {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceAround // Jarak yang merata antar item
-    ) {
-        MacronutrientItem("Carb", 0.6f, Color.Blue)
-        MacronutrientItem("Protein", 0.4f, Color.Red)
-        MacronutrientItem("Fat", 0.3f, Color.Green)
-    }
-}
-
-@Composable
-fun MacronutrientItem(name: String, progress: Float, color: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.size(60.dp)
-        ) {
-            Canvas(modifier = Modifier.size(60.dp)) {
-                drawCircle(
-                    color = Color.LightGray,
-                    radius = size.minDimension / 2,
-                    style = Stroke(width = 8.dp.toPx())
-                )
-                drawArc(
-                    color = color,
-                    startAngle = -90f,
-                    sweepAngle = 360 * progress,
-                    useCenter = false,
-                    style = Stroke(width = 8.dp.toPx()),
-                    size = size
-                )
-            }
-            Text(
-                text = "${(progress * 100).toInt()}%",
-                fontSize = 14.sp,
-                color = Color.Black
-            )
-        }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(text = name, fontSize = 14.sp)
-    }
-}
-
-@Composable
-fun ChallengesSection() {
+fun DailyChallenges() {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFE0B0FF)),
+            // Fixed height for the card to show ~3.5 items
+            .height(380.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFF3E5F5)
+        ),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
-            Text(
-                text = "Complete today's challenges x/3",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Daily History:",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Icon(
+                    painter = painterResource(id = R.drawable.history_icon),
+                    contentDescription = "History",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
 
-            repeat(3) { index ->
-                ChallengeItem(isCompleted = index == 0)
-                Spacer(modifier = Modifier.height(16.dp))
+            // Separate scrollable container for challenge items
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    // Calculate height to show ~3.5 items
+                    // Available space = Card height (380) - padding (32) - header (~40) - spacing (16) ≈ 292dp
+                    .height(292.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                ChallengeItem("Challenge 4", "Drink Milk today!", true)
+                Spacer(modifier = Modifier.height(8.dp))
+                ChallengeItem("Challenge 3", "Drink Fanta today!", false)
+                Spacer(modifier = Modifier.height(8.dp))
+                ChallengeItem("Challenge 2", "Eat Soto today!", false)
+                Spacer(modifier = Modifier.height(8.dp))
+                ChallengeItem("Challenge 1", "Eat Veggie Salad!", true)
+                Spacer(modifier = Modifier.height(8.dp))
+                ChallengeItem("Challenge 0", "Drink Water!", true)
+                Spacer(modifier = Modifier.height(8.dp))
+                ChallengeItem("Previous Challenge", "Exercise 30 minutes!", true)
             }
         }
     }
 }
 
 @Composable
-fun ChallengeItem(isCompleted: Boolean = false) {
+fun ChallengeItem(title: String, description: String, isCompleted: Boolean) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFD08BFF)),
-        shape = RoundedCornerShape(16.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(80.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF8B80F9).copy(alpha = 0.2f)
+        ),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Row(
             modifier = Modifier
-                .padding(16.dp)
+                .padding(12.dp)
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
                 Text(
-                    text = "Challenge 1",
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = Color(0xFF8B80F9)
                 )
                 Text(
-                    text = "Drink milk today!",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.Black
+                    text = description,
+                    style = MaterialTheme.typography.bodyMedium
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "+10 coins",
-                    fontSize = 14.sp,
-                    color = Color.Black
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.coin_icon),
+                        contentDescription = "Coins",
+                        modifier = Modifier.size(16.dp),
+                        tint = Color.Gray
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "+10 coins",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.Gray
+                    )
+                }
             }
 
             if (isCompleted) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_check),
                     contentDescription = "Completed",
-                    tint = Color.Black,
+                    tint = Color(0xFF8B80F9),
                     modifier = Modifier.size(24.dp)
                 )
             }
