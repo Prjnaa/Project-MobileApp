@@ -1,87 +1,229 @@
 package com.project.projectmap.ui.screens.auth.register
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.google.firebase.auth.FirebaseAuth
+import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.*
+import com.project.projectmap.ui.theme.Purple40
+import com.project.projectmap.ui.theme.Purple80
+import com.project.projectmap.ui.theme.PurpleGrey40
+import com.project.projectmap.ui.theme.PurpleGrey80
 
 @Composable
 fun RegisterScreen(onRegisterSuccess: () -> Unit, onNavigateToLogin: () -> Unit) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var caloriesTarget by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val auth = FirebaseAuth.getInstance()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.Start
     ) {
-        Text(text = "Register", style = MaterialTheme.typography.headlineMedium)
+        Spacer(modifier = Modifier.height(80.dp))
 
-        Spacer(modifier = Modifier.height(16.dp))
+        // Welcome Text
+        Text(
+            text = "Welcome! Create Your\nAccount Now",
+            style = TextStyle(
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = Purple80
+            ),
+            lineHeight = 34.sp
+        )
 
-        TextField(
+        Spacer(modifier = Modifier.height(48.dp))
+
+        // Email Field
+        Text(
+            text = "Email",
+            style = TextStyle(
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            ),
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        OutlinedTextField(
             value = email,
             onValueChange = { email = it },
-            label = { Text("Email") }
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(12.dp),
+            placeholder = { Text("Value", color = PurpleGrey40) },
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedBorderColor = PurpleGrey80,
+                focusedBorderColor = Purple40
+            ),
+            singleLine = true
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        TextField(
+        // Password Field
+        Text(
+            text = "Password",
+            style = TextStyle(
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            ),
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Password") },
-            visualTransformation = PasswordVisualTransformation()
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(12.dp),
+            visualTransformation = PasswordVisualTransformation(),
+            placeholder = { Text("Value", color = PurpleGrey40) },
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedBorderColor = PurpleGrey80,
+                focusedBorderColor = Purple40
+            ),
+            singleLine = true
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        TextField(
+        // Re-enter Password Field
+        Text(
+            text = "Re-enter Password",
+            style = TextStyle(
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            ),
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        OutlinedTextField(
             value = confirmPassword,
             onValueChange = { confirmPassword = it },
-            label = { Text("Confirm Password") },
-            visualTransformation = PasswordVisualTransformation()
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(12.dp),
+            visualTransformation = PasswordVisualTransformation(),
+            placeholder = { Text("Value", color = PurpleGrey40) },
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedBorderColor = PurpleGrey80,
+                focusedBorderColor = Purple40
+            ),
+            singleLine = true
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        Button(onClick = {
-            if (password == confirmPassword) {
-                auth.createUserWithEmailAndPassword(email, password)
-                    .addOnCompleteListener { task ->
-                        if (task.isSuccessful) {
-                            onRegisterSuccess() // Arahkan ke halaman setelah registrasi berhasil
-                            onNavigateToLogin() // Arahkan ke halaman login
-                        } else {
-                            errorMessage = task.exception?.message
+        // Calories Target Field
+        Text(
+            text = "Set Your Calories Target",
+            style = TextStyle(
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            ),
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        OutlinedTextField(
+            value = caloriesTarget,
+            onValueChange = { caloriesTarget = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(12.dp),
+            placeholder = { Text("Value", color = PurpleGrey40) },
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedBorderColor = PurpleGrey80,
+                focusedBorderColor = Purple40
+            ),
+            trailingIcon = { Text("/day", color = PurpleGrey40) },
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // Register Button
+        Button(
+            onClick = {
+                if (password == confirmPassword) {
+                    auth.createUserWithEmailAndPassword(email, password)
+                        .addOnCompleteListener { task ->
+                            if (task.isSuccessful) {
+                                onRegisterSuccess() // Navigate to next screen after successful registration
+                                onNavigateToLogin() // Navigate to login screen
+                            } else {
+                                errorMessage = task.exception?.message
+                            }
                         }
-                    }
-            } else {
-                errorMessage = "Passwords do not match"
-            }
-        }) {
-            Text("Register")
+                } else {
+                    errorMessage = "Passwords do not match"
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Purple80)
+        ) {
+            Text(
+                "Register",
+                style = TextStyle(
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Purple40
+                )
+            )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
-
+        // Error Message
         errorMessage?.let {
-            Text(text = it, color = MaterialTheme.colorScheme.error)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = it,
+                color = MaterialTheme.colorScheme.error,
+                style = TextStyle(fontSize = 14.sp)
+            )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.weight(1f))
 
-        TextButton(onClick = { onNavigateToLogin() }) {
-            Text(text = "Already have an account? Login")
+        // Login Link
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 32.dp),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(
+                "Already have an account? ",
+                style = TextStyle(
+                    fontSize = 14.sp,
+                    color = Color.Black
+                )
+            )
+            Text(
+                "Login Now",
+                modifier = Modifier.clickable(onClick = onNavigateToLogin),
+                style = TextStyle(
+                    fontSize = 14.sp,
+                    color = PurpleGrey40,
+                    fontWeight = FontWeight.SemiBold
+                )
+            )
         }
     }
 }
