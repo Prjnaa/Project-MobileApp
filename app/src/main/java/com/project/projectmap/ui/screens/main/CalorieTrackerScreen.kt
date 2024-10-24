@@ -4,6 +4,7 @@ import android.content.Intent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -49,7 +50,7 @@ fun saveCaloriesToDatabase(currentCalories: Int, totalCalories: Int) {
 
 @Composable
 @Preview
-fun CalorieTrackerScreen() {
+fun CalorieTrackerScreen(onNavigateToCalendar: () -> Unit = {}, onNavigateToBadges: () -> Unit = {}) {
     // Wrap entire content in a scrollable column
     Column(
         modifier = Modifier
@@ -60,7 +61,7 @@ fun CalorieTrackerScreen() {
         verticalArrangement = Arrangement.Top
     ) {
         // User Info Bar
-        UserInfoBar()
+        UserInfoBar(onBadgesClick = onNavigateToBadges)
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -94,7 +95,7 @@ fun CalorieTrackerScreen() {
         Spacer(modifier = Modifier.height(24.dp))
 
         // Daily Challenges with fixed height
-        DailyChallenges()
+        DailyChallenges(onHistoryClick = onNavigateToCalendar)
 
         // Add bottom spacing to ensure content doesn't get cut off
         Spacer(modifier = Modifier.height(16.dp))
@@ -102,7 +103,7 @@ fun CalorieTrackerScreen() {
 }
 
 @Composable
-fun UserInfoBar() {
+fun UserInfoBar(onBadgesClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -147,9 +148,14 @@ fun UserInfoBar() {
             Icon(
                 painter = painterResource(id = R.drawable.coin_icon),
                 contentDescription = "Coins",
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier
+                    .size(20.dp)
+                    .clickable { onBadgesClick() }
             )
-            Text(text = "250", modifier = Modifier.padding(horizontal = 4.dp))
+            Text(text = "250",
+                modifier = Modifier
+                    .padding(horizontal = 4.dp)
+                    .clickable { onBadgesClick() })
         }
     }
 }
@@ -322,7 +328,7 @@ fun SetNewTarget() {
 }
 
 @Composable
-fun DailyChallenges() {
+fun DailyChallenges(onHistoryClick: () -> Unit = {}) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -349,7 +355,9 @@ fun DailyChallenges() {
                 Icon(
                     painter = painterResource(id = R.drawable.history_icon),
                     contentDescription = "History",
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clickable { onHistoryClick()}
                 )
             }
 
