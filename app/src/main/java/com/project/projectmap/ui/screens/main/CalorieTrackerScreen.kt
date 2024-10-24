@@ -4,6 +4,7 @@ import android.content.Intent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,7 +13,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
@@ -29,7 +29,7 @@ import com.project.projectmap.ui.theme.Purple80
 
 @Composable
 @Preview
-fun CalorieTrackerScreen() {
+fun CalorieTrackerScreen(onNavigateToCalendar: () -> Unit = {}) {
     // Wrap entire content in a scrollable column
     Column(
         modifier = Modifier
@@ -74,7 +74,7 @@ fun CalorieTrackerScreen() {
         Spacer(modifier = Modifier.height(24.dp))
 
         // Daily Challenges with fixed height
-        DailyChallenges()
+        DailyChallenges(onHistoryClick = onNavigateToCalendar)
 
         // Add bottom spacing to ensure content doesn't get cut off
         Spacer(modifier = Modifier.height(16.dp))
@@ -302,7 +302,7 @@ fun SetNewTarget() {
 }
 
 @Composable
-fun DailyChallenges() {
+fun DailyChallenges(onHistoryClick: () -> Unit = {}) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -329,7 +329,9 @@ fun DailyChallenges() {
                 Icon(
                     painter = painterResource(id = R.drawable.history_icon),
                     contentDescription = "History",
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clickable { onHistoryClick()}
                 )
             }
 
