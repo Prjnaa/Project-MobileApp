@@ -29,7 +29,7 @@ import com.project.projectmap.ui.theme.Purple80
 
 @Composable
 @Preview
-fun CalorieTrackerScreen(onNavigateToCalendar: () -> Unit = {}) {
+fun CalorieTrackerScreen(onNavigateToCalendar: () -> Unit = {}, onNavigateToBadges: () -> Unit = {}) {
     // Wrap entire content in a scrollable column
     Column(
         modifier = Modifier
@@ -40,7 +40,7 @@ fun CalorieTrackerScreen(onNavigateToCalendar: () -> Unit = {}) {
         verticalArrangement = Arrangement.Top
     ) {
         // User Info Bar
-        UserInfoBar()
+        UserInfoBar(onBadgesClick = onNavigateToBadges)
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -82,7 +82,7 @@ fun CalorieTrackerScreen(onNavigateToCalendar: () -> Unit = {}) {
 }
 
 @Composable
-fun UserInfoBar() {
+fun UserInfoBar(onBadgesClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -127,9 +127,14 @@ fun UserInfoBar() {
             Icon(
                 painter = painterResource(id = R.drawable.coin_icon),
                 contentDescription = "Coins",
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier
+                    .size(20.dp)
+                    .clickable { onBadgesClick() }
             )
-            Text(text = "250", modifier = Modifier.padding(horizontal = 4.dp))
+            Text(text = "250",
+                modifier = Modifier
+                    .padding(horizontal = 4.dp)
+                    .clickable { onBadgesClick() })
         }
     }
 }
