@@ -22,9 +22,11 @@ fun NewTargetScreen(
     onClose: () -> Unit,
     onContinue: () -> Unit
 ) {
-    var fat by remember { mutableStateOf("2.9") }
-    var carbohydrate by remember { mutableStateOf("4.8") }
-    var protein by remember { mutableStateOf("5.5") }
+    var fat by remember { mutableStateOf("10") }
+    var carbohydrate by remember { mutableStateOf("10") }
+    var protein by remember { mutableStateOf("10") }
+
+    val calories = calculateCalories(fat, protein, carbohydrate)
 
     Column(
         modifier = Modifier
@@ -66,7 +68,7 @@ fun NewTargetScreen(
                 verticalAlignment = Alignment.Bottom
             ) {
                 Text(
-                    text = "2000",
+                    text = calories.toString(),
                     fontSize = 48.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFBA68C8)
@@ -181,4 +183,12 @@ fun NewTargetScreen(
             )
         }
     }
+}
+
+fun calculateCalories(fat: String, protein: String, carbohydrate: String): Int {
+    val fatValue = fat.toFloatOrNull() ?: 0f
+    val proteinValue = protein.toFloatOrNull() ?: 0f
+    val carbohydrateValue = carbohydrate.toFloatOrNull() ?: 0f
+
+    return ((fatValue * 9) + (proteinValue * 4) + (carbohydrateValue * 4)).toInt()
 }
