@@ -137,7 +137,6 @@ fun RegisterScreen(onRegisterSuccess: () -> Unit, onNavigateToLogin: () -> Unit)
                                         val data = Calories(
                                             userId = currentUser.uid,
                                             caloriesTarget = caloriesTarget.toInt(),
-                                            calorieTrackList = mutableListOf()
                                         )
 
                                         userCalRef.set(data)
