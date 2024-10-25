@@ -9,6 +9,9 @@ Aplikasi ini membantu untuk menghitung kalori dan aplikasi ini dilengkapi dengan
 Aplikasi ini juga bisa menetapkan target kalori harian sesuai dengan kebutuhan, semua data konsumsi tersimpan di history. Aplikasi ini juga memiliki fitur challenge 
 untuk mencapai kalori hariann atau mingguan,setiap berhasil menyelesaikan challenge akan dapat streak atau koin yang nanti nya bisa dibelikan aksesoris untuk karakter.
 
+### Gamifikasi:
+Saat pengguna mencapai target kalori harian atau menyelesaikan challenge akan mendapatkan streak dan koin , koin ini dikumpulkan. Koin ini untuk membeli aksesoris karakter jadi nanti pengguna bisa memperindah atau mempercantik karakter nya. 
+
 ### Fitur-fitur yang sudah di aplikasikan :
 1. Login
 2. Register
