@@ -1,7 +1,16 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.google.gms.google.services)
+}
+
+val secretPropertiesFile = rootProject.file("secrets.properties")
+
+val secretProperties = Properties().apply {
+    load(FileInputStream(secretPropertiesFile))
 }
 
 android {
@@ -19,6 +28,8 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        buildConfigField("String", "GOOGLE_API_TOKEN", "\"${secretProperties["GOOGLE_API_TOKEN"]}\"")
     }
 
     buildTypes {
@@ -39,6 +50,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.1"

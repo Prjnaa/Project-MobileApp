@@ -10,11 +10,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.google.firebase.FirebaseApp
 import com.project.projectmap.components.navigation.AppNavGraph
-import com.project.projectmap.ui.theme.ProjectmapTheme
-import com.google.firebase.ktx.Firebase
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.firestore.FirebaseFirestore
 import com.project.projectmap.ui.screens.main.CalorieTrackerScreen
+import com.project.projectmap.ui.theme.ProjectmapTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
