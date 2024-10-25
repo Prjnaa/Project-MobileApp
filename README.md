@@ -5,7 +5,7 @@
 4. Yasmin Tiara Putri (00000071477)
 
 ### Deskripsi Aplikasi :
-Aplikasi ini membantu untuk menghitung kalori dan aplikasi ini dilengkapi dengan fitur utama yaitu bisa mendeteksi kalori makanan minuman dengan menggunakan kamera.
+Aplikasi ini membantu untuk menghitung kalori dan aplikasi ini dilengkapi dengan fitur utama yaitu bisa mendeteksi kalori makanan minuman dengan menggunakan kamera dan AI.
 Aplikasi ini juga bisa menetapkan target kalori harian sesuai dengan kebutuhan, semua data konsumsi tersimpan di history. Aplikasi ini juga memiliki fitur challenge 
 untuk mencapai kalori hariann atau mingguan,setiap berhasil menyelesaikan challenge akan dapat streak atau koin yang nanti nya bisa dibelikan aksesoris untuk karakter.
 
