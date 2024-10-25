@@ -29,7 +29,10 @@ import com.project.projectmap.ui.theme.Purple80
 
 @Composable
 @Preview
-fun CalorieTrackerScreen(onNavigateToCalendar: () -> Unit = {}, onNavigateToBadges: () -> Unit = {}) {
+fun CalorieTrackerScreen(onNavigateToCalendar: () -> Unit = {},
+                         onNavigateToBadges: () -> Unit = {},
+                         onNavigateToProfile: () -> Unit = {},
+                         onNavigateToNewTarget: () -> Unit = {}) {
     // Wrap entire content in a scrollable column
     Column(
         modifier = Modifier
@@ -40,7 +43,7 @@ fun CalorieTrackerScreen(onNavigateToCalendar: () -> Unit = {}, onNavigateToBadg
         verticalArrangement = Arrangement.Top
     ) {
         // User Info Bar
-        UserInfoBar(onBadgesClick = onNavigateToBadges)
+        UserInfoBar(onBadgesClick = onNavigateToBadges, onProfileClick = onNavigateToProfile)
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -69,7 +72,7 @@ fun CalorieTrackerScreen(onNavigateToCalendar: () -> Unit = {}, onNavigateToBadg
         Spacer(modifier = Modifier.height(8.dp))
 
         // Set New Target Text
-        SetNewTarget()
+        SetNewTarget(onNewTargetClick = onNavigateToNewTarget)
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -82,7 +85,7 @@ fun CalorieTrackerScreen(onNavigateToCalendar: () -> Unit = {}, onNavigateToBadg
 }
 
 @Composable
-fun UserInfoBar(onBadgesClick: () -> Unit) {
+fun UserInfoBar(onBadgesClick: () -> Unit, onProfileClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -101,8 +104,11 @@ fun UserInfoBar(onBadgesClick: () -> Unit) {
             Icon(
                 painter = painterResource(id = R.drawable.profile_icon),
                 contentDescription = "Profile",
-                modifier = Modifier.size(24.dp),
-                tint = Color.Unspecified
+                modifier = Modifier
+                    .size(24.dp)
+                    .clickable(onClick = onProfileClick),
+                tint = Color.Unspecified,
+
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
@@ -296,10 +302,12 @@ fun TrackEatButton() {
 }
 
 @Composable
-fun SetNewTarget() {
+fun SetNewTarget(onNewTargetClick: () -> Unit) {
     Text(
         text = "set new target",
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onNewTargetClick() },
         textAlign = TextAlign.Center,
         style = MaterialTheme.typography.bodyMedium,
         color = Color.Gray

@@ -10,6 +10,8 @@ import com.project.projectmap.ui.screens.auth.register.RegisterScreen
 import com.project.projectmap.ui.screens.badges.BadgesPage
 import com.project.projectmap.ui.screens.calendarPage.CalendarPage
 import com.project.projectmap.ui.screens.main.CalorieTrackerScreen
+import com.project.projectmap.ui.screens.main.NewTargetScreen
+import com.project.projectmap.ui.screens.profilePage.ProfileScreen
 
 object AppDestinations {
     const val LOGIN_ROUTE = "login"
@@ -17,6 +19,8 @@ object AppDestinations {
     const val CALORIE_TRACKER_ROUTE = "calorie_tracker"
     const val CALENDAR_ROUTE = "calendar"
     const val BADGES_ROUTE = "badges"
+    const val PROFILE_ROUTE = "profile"
+    const val NEW_TARGET_ROUTE = "new_target"
 }
 
 @Composable
@@ -41,29 +45,38 @@ fun AppNavGraph(navController: NavHostController = rememberNavController()) {
         composable(AppDestinations.REGISTER_ROUTE) {
             RegisterScreen(
                 onRegisterSuccess = {
-                    navController.popBackStack() // Kembali ke login screen setelah registrasi sukses
+                    navController.popBackStack()
                 },
                 onNavigateToLogin = {
-                    navController.popBackStack(AppDestinations.LOGIN_ROUTE, false) // Kembali ke login jika di klik tombol login
+                    navController.popBackStack(AppDestinations.LOGIN_ROUTE, false)
                 }
             )
-        }
-
-        composable(AppDestinations.CALORIE_TRACKER_ROUTE) {
-            CalorieTrackerScreen()
         }
 
         composable(AppDestinations.CALORIE_TRACKER_ROUTE) {
             CalorieTrackerScreen(
                 onNavigateToCalendar = {
                     navController.navigate(AppDestinations.CALENDAR_ROUTE)
+                },
+                onNavigateToBadges = {
+                    navController.navigate(AppDestinations.BADGES_ROUTE)
+                },
+                onNavigateToProfile = {
+                    navController.navigate(AppDestinations.PROFILE_ROUTE)
+                },
+                onNavigateToNewTarget = {
+                    navController.navigate(AppDestinations.NEW_TARGET_ROUTE)
                 }
             )
         }
-        composable(AppDestinations.CALORIE_TRACKER_ROUTE){
-            CalorieTrackerScreen(
-                onNavigateToBadges = {
-                    navController.navigate(AppDestinations.BADGES_ROUTE)
+
+        composable(AppDestinations.NEW_TARGET_ROUTE) {
+            NewTargetScreen(
+                onClose = {
+                    navController.popBackStack()
+                },
+                onContinue = {
+                    navController.popBackStack()
                 }
             )
         }
@@ -84,7 +97,18 @@ fun AppNavGraph(navController: NavHostController = rememberNavController()) {
             )
         }
 
-
-
+        composable(AppDestinations.PROFILE_ROUTE) {
+            ProfileScreen(
+                onClose = {
+                    navController.popBackStack()
+                },
+                onLogout = {
+                    // Navigate to login and clear the back stack
+                    navController.navigate(AppDestinations.LOGIN_ROUTE) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
+        }
     }
 }
