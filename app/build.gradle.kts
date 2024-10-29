@@ -29,7 +29,11 @@ android {
             useSupportLibrary = true
         }
 
-        buildConfigField("String", "GOOGLE_API_TOKEN", "\"${secretProperties["GOOGLE_API_TOKEN"]}\"")
+        buildConfigField(
+            "String",
+            "GOOGLE_API_TOKEN",
+            "\"${secretProperties["GOOGLE_API_TOKEN"]}\""
+        )
     }
 
     buildTypes {
@@ -64,19 +68,37 @@ android {
 
 
 dependencies {
-
+// Core Libraries
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+
+// Compose UI
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation(libs.firebase.auth)
-    implementation (platform(libs.firebase.bom))
-    implementation (libs.play.services.auth)
     implementation(libs.androidx.navigation.compose)
+
+// Firebase
+    implementation(libs.firebase.auth)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.storage)
+
+// Play Services
+    implementation(libs.play.services.auth)
+
+// Camera (for ML Kit and other camera functionality)
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
+    implementation(libs.androidx.camera.mlkit.vision)
+    implementation(libs.androidx.camera.extensions)
+
+// Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -84,14 +106,4 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    implementation(libs.androidx.camera.core)
-    implementation(libs.androidx.camera.camera2)
-    implementation(libs.androidx.camera.lifecycle)
-    implementation(libs.androidx.camera.view)
-    implementation(libs.androidx.camera.mlkit.vision)
-    implementation(libs.androidx.camera.extensions)
-    implementation(libs.firebase.firestore)
-    implementation(libs.firebase.storage)
-
-
 }

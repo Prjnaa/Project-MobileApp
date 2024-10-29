@@ -31,14 +31,7 @@ fun AppNavGraph(navController: NavHostController = rememberNavController()) {
     ) {
         composable(AppDestinations.LOGIN_ROUTE) {
             LoginScreen(
-                onLoginSuccess = {
-                    navController.navigate(AppDestinations.CALORIE_TRACKER_ROUTE) {
-                        popUpTo(AppDestinations.LOGIN_ROUTE) { inclusive = true }
-                    }
-                },
-                onRegisterClick = {
-                    navController.navigate(AppDestinations.REGISTER_ROUTE)
-                }
+
             )
         }
 
