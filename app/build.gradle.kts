@@ -1,7 +1,18 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.google.gms.google.services)
+}
+
+val secretPropertiesFile = rootProject.file("secret.properties")
+val secretProperties = Properties()
+if (secretPropertiesFile.exists()) {
+    secretProperties.load(FileInputStream(secretPropertiesFile))
+} else {
+    secretProperties["GOOGLE_API_TOKEN"] = "\"default-token\""
 }
 
 android {
@@ -14,6 +25,12 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+
+        buildConfigField(
+            "String",
+            "GOOGLE_API_TOKEN",
+            secretProperties["GOOGLE_API_TOKEN"] as String
+        )
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -38,6 +55,7 @@ android {
         jvmTarget = "1.8"
     }
     buildFeatures {
+        buildConfig = true
         compose = true
     }
     composeOptions {
@@ -66,6 +84,7 @@ dependencies {
     implementation (platform(libs.firebase.bom))
     implementation (libs.play.services.auth)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.firebase.firestore.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -86,5 +105,6 @@ dependencies {
         implementation(libs.androidx.camera.mlkit.vision)
         // If you want to additionally use the CameraX Extensions library
         implementation(libs.androidx.camera.extensions)
+        implementation (libs.kotlinx.coroutines.play.services)
     }
 }

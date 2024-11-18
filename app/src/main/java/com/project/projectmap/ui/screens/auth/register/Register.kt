@@ -13,19 +13,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.google.firebase.auth.*
+import com.google.firebase.auth.FirebaseAuth
 import com.project.projectmap.ui.theme.Purple40
 import com.project.projectmap.ui.theme.Purple80
 import com.project.projectmap.ui.theme.PurpleGrey40
 import com.project.projectmap.ui.theme.PurpleGrey80
 
 @Composable
-fun RegisterScreen(onRegisterSuccess: () -> Unit, onNavigateToLogin: () -> Unit) {
+fun RegisterScreen(
+    onRegisterSuccess: () -> Unit,
+    onNavigateToLogin: () -> Unit
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    var caloriesTarget by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
+
     val auth = FirebaseAuth.getInstance()
 
     Column(
@@ -65,12 +69,13 @@ fun RegisterScreen(onRegisterSuccess: () -> Unit, onNavigateToLogin: () -> Unit)
                 .fillMaxWidth()
                 .height(56.dp),
             shape = RoundedCornerShape(12.dp),
-            placeholder = { Text("Value", color = PurpleGrey40) },
+            placeholder = { Text("Enter your email", color = PurpleGrey40) },
             colors = OutlinedTextFieldDefaults.colors(
                 unfocusedBorderColor = PurpleGrey80,
                 focusedBorderColor = Purple40
             ),
-            singleLine = true
+            singleLine = true,
+            enabled = !isLoading
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -92,12 +97,13 @@ fun RegisterScreen(onRegisterSuccess: () -> Unit, onNavigateToLogin: () -> Unit)
                 .height(56.dp),
             shape = RoundedCornerShape(12.dp),
             visualTransformation = PasswordVisualTransformation(),
-            placeholder = { Text("Value", color = PurpleGrey40) },
+            placeholder = { Text("Enter your password", color = PurpleGrey40) },
             colors = OutlinedTextFieldDefaults.colors(
                 unfocusedBorderColor = PurpleGrey80,
                 focusedBorderColor = Purple40
             ),
-            singleLine = true
+            singleLine = true,
+            enabled = !isLoading
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -119,39 +125,13 @@ fun RegisterScreen(onRegisterSuccess: () -> Unit, onNavigateToLogin: () -> Unit)
                 .height(56.dp),
             shape = RoundedCornerShape(12.dp),
             visualTransformation = PasswordVisualTransformation(),
-            placeholder = { Text("Value", color = PurpleGrey40) },
+            placeholder = { Text("Confirm Password", color = PurpleGrey40) },
             colors = OutlinedTextFieldDefaults.colors(
                 unfocusedBorderColor = PurpleGrey80,
                 focusedBorderColor = Purple40
             ),
-            singleLine = true
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Calories Target Field
-        Text(
-            text = "Set Your Calories Target",
-            style = TextStyle(
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
-            ),
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        OutlinedTextField(
-            value = caloriesTarget,
-            onValueChange = { caloriesTarget = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(12.dp),
-            placeholder = { Text("Value", color = PurpleGrey40) },
-            colors = OutlinedTextFieldDefaults.colors(
-                unfocusedBorderColor = PurpleGrey80,
-                focusedBorderColor = Purple40
-            ),
-            trailingIcon = { Text("/day", color = PurpleGrey40) },
-            singleLine = true
+            singleLine = true,
+            enabled = !isLoading
         )
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -159,34 +139,49 @@ fun RegisterScreen(onRegisterSuccess: () -> Unit, onNavigateToLogin: () -> Unit)
         // Register Button
         Button(
             onClick = {
-                if (password == confirmPassword) {
+                if (email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
+                    errorMessage = "All fields are required"
+                } else if (!isValidEmail(email)) {
+                    errorMessage = "Please enter a valid email address"
+                } else if (password.length < 6) {
+                    errorMessage = "Password must be at least 6 characters long"
+                } else if (password != confirmPassword) {
+                    errorMessage = "Passwords do not match"
+                } else {
+                    isLoading = true
                     auth.createUserWithEmailAndPassword(email, password)
                         .addOnCompleteListener { task ->
+                            isLoading = false
                             if (task.isSuccessful) {
-                                onRegisterSuccess() // Navigate to next screen after successful registration
-                                onNavigateToLogin() // Navigate to login screen
+                                onRegisterSuccess()
                             } else {
-                                errorMessage = task.exception?.message
+                                errorMessage = task.exception?.message ?: "Registration failed"
                             }
                         }
-                } else {
-                    errorMessage = "Passwords do not match"
                 }
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Purple80)
+            colors = ButtonDefaults.buttonColors(containerColor = Purple80),
+            enabled = !isLoading
         ) {
-            Text(
-                "Register",
-                style = TextStyle(
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
                     color = Purple40
                 )
-            )
+            } else {
+                Text(
+                    "Register",
+                    style = TextStyle(
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Purple40
+                    )
+                )
+            }
         }
 
         // Error Message
@@ -217,7 +212,10 @@ fun RegisterScreen(onRegisterSuccess: () -> Unit, onNavigateToLogin: () -> Unit)
             )
             Text(
                 "Login Now",
-                modifier = Modifier.clickable(onClick = onNavigateToLogin),
+                modifier = Modifier.clickable(
+                    enabled = !isLoading,
+                    onClick = onNavigateToLogin
+                ),
                 style = TextStyle(
                     fontSize = 14.sp,
                     color = PurpleGrey40,
@@ -226,4 +224,9 @@ fun RegisterScreen(onRegisterSuccess: () -> Unit, onNavigateToLogin: () -> Unit)
             )
         }
     }
+}
+
+private fun isValidEmail(email: String): Boolean {
+    val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$"
+    return email.matches(emailRegex.toRegex())
 }
