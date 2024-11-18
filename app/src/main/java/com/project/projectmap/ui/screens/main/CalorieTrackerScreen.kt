@@ -10,7 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,90 +23,182 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.project.projectmap.R
 import com.project.projectmap.ui.screens.camera.MainActivity
 import com.project.projectmap.ui.theme.Purple40
 import com.project.projectmap.ui.theme.Purple80
+import kotlinx.coroutines.tasks.await
 
-
-fun saveCaloriesToDatabase(currentCalories: Int, totalCalories: Int) {
-    val db = FirebaseFirestore.getInstance()
-    val caloriesData = hashMapOf(
-        "currentCalories" to currentCalories,
-        "totalCalories" to totalCalories,
-        "timestamp" to System.currentTimeMillis()
-    )
-
-    db.collection("calories")
-        .add(caloriesData)
-        .addOnSuccessListener { documentReference ->
-            println("Calories saved with ID: ${documentReference.id}")
-        }
-        .addOnFailureListener { e ->
-            println("Error saving calories: $e")
-        }
-}
+data class UserNutritionTarget(
+    val fat: Float = 0f,
+    val protein: Float = 0f,
+    val carbohydrate: Float = 0f,
+    val totalCalories: Int = 2000 // default value
+)
 
 @Composable
-@Preview
-fun CalorieTrackerScreen(onNavigateToCalendar: () -> Unit = {},
-                         onNavigateToBadges: () -> Unit = {},
-                         onNavigateToProfile: () -> Unit = {},
-                         onNavigateToNewTarget: () -> Unit = {}) {
-    // Wrap entire content in a scrollable column
+fun CalorieTrackerScreen(
+    onNavigateToCalendar: () -> Unit = {},
+    onNavigateToBadges: () -> Unit = {},
+    onNavigateToProfile: () -> Unit = {},
+    onNavigateToNewTarget: () -> Unit = {}
+) {
+    var nutritionTarget by remember { mutableStateOf(UserNutritionTarget()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val db = FirebaseFirestore.getInstance()
+
+    // Dummy current values (bisa diganti dengan data real dari tracking)
+    var currentCarbs by remember { mutableStateOf(0f) }
+    var currentProtein by remember { mutableStateOf(0f) }
+    var currentFat by remember { mutableStateOf(0f) }
+    var currentCalories by remember { mutableStateOf(0) }
+
+    // Effect untuk mengambil data target dari Firestore
+    LaunchedEffect(currentUser?.uid) {
+        currentUser?.let { user ->
+            try {
+                val document = db.collection("userTargets")
+                    .document(user.uid)
+                    .get()
+                    .await()
+
+                if (document.exists()) {
+                    nutritionTarget = UserNutritionTarget(
+                        fat = document.getDouble("fat")?.toFloat() ?: 0f,
+                        protein = document.getDouble("protein")?.toFloat() ?: 0f,
+                        carbohydrate = document.getDouble("carbohydrate")?.toFloat() ?: 0f,
+                        totalCalories = document.getLong("totalCalories")?.toInt() ?: 2000
+                    )
+
+                    // Set dummy current values (30-70% dari target)
+                    currentCarbs = nutritionTarget.carbohydrate * 0.5f
+                    currentProtein = nutritionTarget.protein * 0.6f
+                    currentFat = nutritionTarget.fat * 0.4f
+                    currentCalories = 200
+                } else {
+                    errorMessage = "No nutrition target found. Please set your target."
+                }
+            } catch (e: Exception) {
+                errorMessage = "Error loading nutrition target: ${e.message}"
+            } finally {
+                isLoading = false
+            }
+        } ?: run {
+            errorMessage = "No user logged in"
+            isLoading = false
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
-            .verticalScroll(rememberScrollState()) // Main scroll for entire screen
+            .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.Top
     ) {
         // User Info Bar
-        UserInfoBar(onBadgesClick = onNavigateToBadges, onProfileClick = onNavigateToProfile)
+        UserInfoBar(
+            onBadgesClick = onNavigateToBadges,
+            onProfileClick = onNavigateToProfile,
+            username = currentUser?.displayName ?: "User"
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Macronutrient Progress
-        MacronutrientRow()
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .size(50.dp)
+                    .align(Alignment.CenterHorizontally),
+                color = Purple40
+            )
+        } else {
+            errorMessage?.let {
+                Text(
+                    text = it,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            // Macronutrient Progress
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                MacronutrientItem(
+                    name = "Carb",
+                    progress = if (nutritionTarget.carbohydrate > 0)
+                        currentCarbs / nutritionTarget.carbohydrate else 0f,
+                    color = Color(0xFF8B80F9),
+                    current = currentCarbs.toInt(),
+                    target = nutritionTarget.carbohydrate.toInt()
+                )
+                MacronutrientItem(
+                    name = "Protein",
+                    progress = if (nutritionTarget.protein > 0)
+                        currentProtein / nutritionTarget.protein else 0f,
+                    color = Color(0xFF8B80F9),
+                    current = currentProtein.toInt(),
+                    target = nutritionTarget.protein.toInt()
+                )
+                MacronutrientItem(
+                    name = "Fat",
+                    progress = if (nutritionTarget.fat > 0)
+                        currentFat / nutritionTarget.fat else 0f,
+                    color = Color(0xFF8B80F9),
+                    current = currentFat.toInt(),
+                    target = nutritionTarget.fat.toInt()
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Bunny Image
         BunnyImage()
 
         Spacer(modifier = Modifier.height(24.dp))
 
         // Calorie Progress
         CalorieProgress(
-            progress = 0.53f,
-            totalCalories = 2000,
-            currentCalories = 1057
+            progress = if (nutritionTarget.totalCalories > 0)
+                currentCalories.toFloat() / nutritionTarget.totalCalories else 0f,
+            totalCalories = nutritionTarget.totalCalories,
+            currentCalories = currentCalories
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Track Eat Button
         TrackEatButton()
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Set New Target Text
         SetNewTarget(onNewTargetClick = onNavigateToNewTarget)
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Daily Challenges with fixed height
         DailyChallenges(onHistoryClick = onNavigateToCalendar)
 
-        // Add bottom spacing to ensure content doesn't get cut off
         Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
 @Composable
-fun UserInfoBar(onBadgesClick: () -> Unit, onProfileClick: () -> Unit) {
+fun UserInfoBar(
+    onBadgesClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    username: String
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -128,12 +220,11 @@ fun UserInfoBar(onBadgesClick: () -> Unit, onProfileClick: () -> Unit) {
                 modifier = Modifier
                     .size(24.dp)
                     .clickable(onClick = onProfileClick),
-                tint = Color.Unspecified,
-
+                tint = Color.Unspecified
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Hosea",
+                text = username,
                 style = MaterialTheme.typography.titleMedium
             )
         }
@@ -158,28 +249,24 @@ fun UserInfoBar(onBadgesClick: () -> Unit, onProfileClick: () -> Unit) {
                     .size(20.dp)
                     .clickable { onBadgesClick() }
             )
-            Text(text = "250",
+            Text(
+                text = "250",
                 modifier = Modifier
                     .padding(horizontal = 4.dp)
-                    .clickable { onBadgesClick() })
+                    .clickable { onBadgesClick() }
+            )
         }
     }
 }
 
 @Composable
-fun MacronutrientRow() {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        MacronutrientItem("Carb", 0.65f, Color(0xFF8B80F9))
-        MacronutrientItem("Protein", 0.45f, Color(0xFF8B80F9))
-        MacronutrientItem("Fat", 0.30f, Color(0xFF8B80F9))
-    }
-}
-
-@Composable
-fun MacronutrientItem(name: String, progress: Float, color: Color) {
+fun MacronutrientItem(
+    name: String,
+    progress: Float,
+    color: Color,
+    current: Int,
+    target: Int
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(80.dp)
@@ -189,15 +276,24 @@ fun MacronutrientItem(name: String, progress: Float, color: Color) {
             modifier = Modifier.size(70.dp)
         ) {
             CircularProgressIndicator(
-                progress = progress,
+                progress = progress.coerceIn(0f, 1f),
                 modifier = Modifier.fillMaxSize(),
                 color = color,
                 strokeWidth = 8.dp
             )
-            Text(
-                text = "${(progress * 100).toInt()}%",
-                style = MaterialTheme.typography.labelMedium
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "${(progress * 100).toInt()}%",
+                    style = MaterialTheme.typography.labelMedium
+                )
+                Text(
+                    text = "$current/$target",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Gray
+                )
+            }
         }
         Spacer(modifier = Modifier.height(4.dp))
         Text(
@@ -236,14 +332,12 @@ fun CalorieProgress(
             .padding(horizontal = 32.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Container for both arc and text to ensure proper layering
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(120.dp),
             contentAlignment = Alignment.Center
         ) {
-            // Progress Arc
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -253,7 +347,6 @@ fun CalorieProgress(
                 val startAngle = 180f
                 val sweepAngle = 180f
 
-                // Draw background arc
                 drawArc(
                     color = Purple80,
                     startAngle = startAngle,
@@ -263,7 +356,6 @@ fun CalorieProgress(
                     size = size.copy(height = size.height * 2)
                 )
 
-                // Draw progress arc
                 drawArc(
                     color = Purple40,
                     startAngle = startAngle,
@@ -274,14 +366,12 @@ fun CalorieProgress(
                 )
             }
 
-            // Calorie text positioned exactly in the center
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .offset(y = 20.dp) // Adjusted to be more centered within the arc
+                modifier = Modifier.offset(y = 20.dp)
             ) {
                 Text(
-                    text = String.format("%.1f", currentCalories.toFloat()),
+                    text = currentCalories.toString(),
                     style = MaterialTheme.typography.displayMedium.copy(
                         fontSize = 40.sp,
                         fontWeight = FontWeight.Normal,
