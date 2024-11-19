@@ -12,6 +12,7 @@ import com.project.projectmap.ui.screens.auth.login.LoginScreen
 import com.project.projectmap.ui.screens.auth.register.RegisterScreen
 import com.project.projectmap.ui.screens.badges.BadgesPage
 import com.project.projectmap.ui.screens.calendarPage.CalendarPage
+import com.project.projectmap.ui.screens.camera.PhotoBottomSheetContent
 import com.project.projectmap.ui.screens.main.CalorieTrackerScreen
 import com.project.projectmap.ui.screens.main.NewTargetScreen
 import com.project.projectmap.ui.screens.profilePage.ProfileScreen
@@ -24,6 +25,7 @@ object AppDestinations {
     const val BADGES_ROUTE = "badges"
     const val PROFILE_ROUTE = "profile"
     const val NEW_TARGET_ROUTE = "new_target"
+    const val CAMERA_ROUTE = "camera"
 }
 
 @Composable
@@ -55,6 +57,7 @@ fun AppNavGraph(
                 }
             )
         }
+
 
         composable(AppDestinations.REGISTER_ROUTE) {
             RegisterScreen(
@@ -126,6 +129,7 @@ fun AppNavGraph(
                 }
             )
         }
+
 
         composable(AppDestinations.PROFILE_ROUTE) {
             ProfileScreen(

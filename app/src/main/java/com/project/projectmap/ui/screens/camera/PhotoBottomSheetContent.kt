@@ -1,29 +1,53 @@
 package com.project.projectmap.ui.screens.camera
 
+import android.app.Activity
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.FirebaseFirestore
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PhotoBottomSheetContent() {
+fun PhotoBottomSheetContent(
+    onDismiss: () -> Unit = {}
+) {
     var fat by remember { mutableStateOf(1.9f) }
     var carbohydrate by remember { mutableStateOf(5.8f) }
     var protein by remember { mutableStateOf(4.1f) }
+    var foodName by remember { mutableStateOf("Milk") }
 
     val calories = remember(fat, carbohydrate, protein) {
         String.format("%.1f", (protein * 4) + (carbohydrate * 4) + (fat * 9))
     }
+
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val db = FirebaseFirestore.getInstance()
+    val context = LocalContext.current
+    val activity = context as? Activity
 
     Column(
         modifier = Modifier
@@ -32,16 +56,25 @@ fun PhotoBottomSheetContent() {
             .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
             .padding(16.dp)
     ) {
+        // Editable Food Name
+        TextField(
+            value = foodName,
+            onValueChange = { foodName = it },
+            singleLine = true,
+            textStyle = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                focusedIndicatorColor = Color.LightGray,
+                unfocusedIndicatorColor = Color.LightGray
+            )
 
-        Text(
-            text = "Milk",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black,
-            modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        Text(text = "calories")
+        Text(text = "Calories")
 
         Text(
             text = "$calories Cals",
@@ -58,7 +91,39 @@ fun PhotoBottomSheetContent() {
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = { /* TODO: Handle submit */ },
+            onClick = {
+                currentUser?.let { user ->
+                    // Get current date
+                    val currentDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(
+                        Date()
+                    )
+
+                    // Create nutrition entry
+                    val nutritionEntry = hashMapOf(
+                        "userId" to user.uid,
+                        "date" to currentDate,
+                        "fat" to fat,
+                        "protein" to protein,
+                        "carbohydrate" to carbohydrate,
+                        "calories" to calories.toFloat(),
+                        "foodName" to foodName,
+                        "timestamp" to FieldValue.serverTimestamp()
+                    )
+
+                    // Add to daily entries collection
+                    db.collection("dailyNutrition")
+                        .add(nutritionEntry)
+                        .addOnSuccessListener {
+                            Toast.makeText(context, "Nutrition tracked successfully!", Toast.LENGTH_SHORT).show()
+                            onDismiss()
+                            // Close the activity to return to the previous screen
+                            activity?.finish()
+                        }
+                        .addOnFailureListener { e ->
+                            Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                        }
+                }
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),
@@ -80,175 +145,20 @@ fun EditableNutrientInfo(name: String, amount: Float, onValueChange: (Float) -> 
         TextField(
             value = amount.toString(),
             onValueChange = {
-                onValueChange(it.toFloatOrNull() ?: 0f)
+                val sanitizedInput = it.replace(",", ".")
+                onValueChange(sanitizedInput.toFloatOrNull() ?: 0f)
             },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true,
             textStyle = TextStyle(color = Color.Black, fontSize = 18.sp),
             modifier = Modifier.fillMaxWidth(),
             colors = TextFieldDefaults.colors(
-                focusedIndicatorColor = Color.LightGray,
-                unfocusedIndicatorColor = Color.LightGray,
                 focusedContainerColor = Color.Transparent,
-                unfocusedContainerColor = Color.Transparent
+                unfocusedContainerColor = Color.Transparent,
+                focusedIndicatorColor = Color.LightGray,
+                unfocusedIndicatorColor = Color.LightGray
             )
+
         )
     }
 }
-
-// Kode lama (dikomentari):
-/*
-@Composable
-fun PhotoBottomSheetContent() {
-    var protein by remember { mutableStateOf(15.80f) }
-    var carbohydrate by remember { mutableStateOf(15.80f) }
-    var fat by remember { mutableStateOf(15.80f) }
-
-    val calories = remember(protein, carbohydrate, fat) {
-        ((protein * 4) + (carbohydrate * 4) + (fat * 9)).toInt()
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color(0xFFF3E5F5))
-            .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-            .padding(16.dp)
-    ) {
-        Text(
-            text = "MILK",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black,
-            modifier = Modifier
-                .padding(bottom = 16.dp)
-                .align(Alignment.CenterHorizontally)
-        )
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            CalorieCircle(
-                calories = calories,
-                progress = calories / 2000f, // Assuming 2000 calories is 100%
-                modifier = Modifier.weight(1f)
-            )
-            Spacer(modifier = Modifier.width(24.dp))
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                EditableNutrientInfo("Carbohydrate", carbohydrate) { carbohydrate = it }
-                Spacer(modifier = Modifier.height(8.dp))
-                EditableNutrientInfo("Protein", protein) { protein = it }
-                Spacer(modifier = Modifier.height(8.dp))
-                EditableNutrientInfo("Fat", fat) { fat = it }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = { /* TODO: Handle submit */ },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCE93D8))
-        ) {
-            Text("Submit", color = Color.White)
-        }
-    }
-}
-
-@Composable
-fun CalorieCircle(calories: Int, progress: Float, modifier: Modifier = Modifier) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier.aspectRatio(1f)
-    ) {
-        CircularProgressIndicator(
-            progress = 1f,
-            modifier = Modifier.fillMaxSize(),
-            color = Color(0xFFE1BEE7),
-            strokeWidth = 24.dp,
-            strokeCap = StrokeCap.Round
-        )
-        CircularProgressIndicator(
-            progress = progress,
-            modifier = Modifier.fillMaxSize(),
-            color = Color(0xFFBA68C8),
-            strokeWidth = 24.dp,
-            strokeCap = StrokeCap.Round
-        )
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "$calories",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
-            Text(
-                text = "Calories",
-                fontSize = 10.sp,
-                color = Color.Black
-            )
-        }
-    }
-}
-
-@Composable
-fun EditableNutrientInfo(name: String, amount: Float, onValueChange: (Float) -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .weight(0.3f)
-        ) {
-            CircularProgressIndicator(
-                progress = 1f,
-                modifier = Modifier.fillMaxSize(),
-                color = Color(0xFFE1BEE7),
-                strokeWidth = 7.dp,
-                strokeCap = StrokeCap.Round
-            )
-            CircularProgressIndicator(
-                progress = amount / 100f, // Assuming 100g is 100%
-                modifier = Modifier.fillMaxSize(),
-                color = Color(0xFFBA68C8),
-                strokeWidth = 7.dp,
-                strokeCap = StrokeCap.Round
-            )
-        }
-        Spacer(modifier = Modifier.width(8.dp))
-        Column(modifier = Modifier.weight(0.7f)) {
-            TextField(
-                value = amount.toString(),
-                onValueChange = {
-                    onValueChange(it.toFloatOrNull() ?: 0f)
-                },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                textStyle = TextStyle(color = Color.Black, fontSize = 16.sp, textAlign = TextAlign.End),
-                modifier = Modifier.fillMaxWidth(),
-                colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = Color(0xFFBA68C8),
-                    unfocusedIndicatorColor = Color(0xFFE1BEE7),
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent
-                )
-            )
-            Text(
-                text = name,
-                fontSize = 14.sp,
-                color = Color.Black
-            )
-        }
-    }
-}
-*/
