@@ -6,13 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -71,7 +65,6 @@ fun PhotoBottomSheetContent(
                 focusedIndicatorColor = Color.LightGray,
                 unfocusedIndicatorColor = Color.LightGray
             )
-
         )
 
         Text(text = "Calories")
@@ -116,7 +109,8 @@ fun PhotoBottomSheetContent(
                         .addOnSuccessListener {
                             Toast.makeText(context, "Nutrition tracked successfully!", Toast.LENGTH_SHORT).show()
                             onDismiss()
-                            // Close the activity to return to the previous screen
+                            // Set result and finish activity
+                            activity?.setResult(Activity.RESULT_OK)
                             activity?.finish()
                         }
                         .addOnFailureListener { e ->
@@ -158,7 +152,6 @@ fun EditableNutrientInfo(name: String, amount: Float, onValueChange: (Float) -> 
                 focusedIndicatorColor = Color.LightGray,
                 unfocusedIndicatorColor = Color.LightGray
             )
-
         )
     }
 }
