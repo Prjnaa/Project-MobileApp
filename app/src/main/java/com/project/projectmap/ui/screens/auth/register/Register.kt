@@ -14,16 +14,19 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.project.projectmap.ui.theme.Purple40
 import com.project.projectmap.ui.theme.Purple80
 import com.project.projectmap.ui.theme.PurpleGrey40
 import com.project.projectmap.ui.theme.PurpleGrey80
+import kotlinx.coroutines.tasks.await
 
 @Composable
 fun RegisterScreen(
     onRegisterSuccess: () -> Unit,
     onNavigateToLogin: () -> Unit
 ) {
+    var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
@@ -31,7 +34,7 @@ fun RegisterScreen(
     var isLoading by remember { mutableStateOf(false) }
 
     val auth = FirebaseAuth.getInstance()
-    val currentUser = auth.currentUser
+    val db = FirebaseFirestore.getInstance()
 
     Column(
         modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
@@ -44,7 +47,34 @@ fun RegisterScreen(
                 style = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Purple80),
                 lineHeight = 34.sp)
 
-            Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(48.dp))
+
+        // Username Field
+        Text(
+            text = "Username",
+            style = TextStyle(
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            ),
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        OutlinedTextField(
+            value = username,
+            onValueChange = { username = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(12.dp),
+            placeholder = { Text("Choose a username", color = PurpleGrey40) },
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedBorderColor = PurpleGrey80,
+                focusedBorderColor = Purple40
+            ),
+            singleLine = true,
+            enabled = !isLoading
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
 
         // Email Field
         Text(
@@ -132,8 +162,10 @@ fun RegisterScreen(
         // Register Button
         Button(
             onClick = {
-                if (email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
+                if (username.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
                     errorMessage = "All fields are required"
+                } else if (username.length < 3) {
+                    errorMessage = "Username must be at least 3 characters long"
                 } else if (!isValidEmail(email)) {
                     errorMessage = "Please enter a valid email address"
                 } else if (password.length < 6) {
@@ -144,10 +176,43 @@ fun RegisterScreen(
                     isLoading = true
                     auth.createUserWithEmailAndPassword(email, password)
                         .addOnCompleteListener { task ->
-                            isLoading = false
                             if (task.isSuccessful) {
-                                onRegisterSuccess()
+                                val currentUser = auth.currentUser
+                                currentUser?.let { user ->
+                                    // Create user profile in Firestore
+                                    val userProfile = hashMapOf(
+                                        "uid" to user.uid,
+                                        "username" to username,
+                                        "email" to email,
+                                        "initialTarget" to false
+                                    )
+
+                                    db.collection("users")
+                                        .document(user.uid)
+                                        .set(userProfile)
+                                        .addOnSuccessListener {
+                                            // Update user profile with display name
+                                            val profileUpdates = com.google.firebase.auth.UserProfileChangeRequest.Builder()
+                                                .setDisplayName(username)
+                                                .build()
+
+                                            user.updateProfile(profileUpdates)
+                                                .addOnCompleteListener { profileTask ->
+                                                    isLoading = false
+                                                    if (profileTask.isSuccessful) {
+                                                        onRegisterSuccess()
+                                                    } else {
+                                                        errorMessage = profileTask.exception?.message ?: "Profile update failed"
+                                                    }
+                                                }
+                                        }
+                                        .addOnFailureListener { e ->
+                                            isLoading = false
+                                            errorMessage = "Error saving user profile: ${e.message}"
+                                        }
+                                }
                             } else {
+                                isLoading = false
                                 errorMessage = task.exception?.message ?: "Registration failed"
                             }
                         }

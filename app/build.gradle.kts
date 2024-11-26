@@ -99,7 +99,17 @@ dependencies {
     implementation(libs.androidx.camera.mlkit.vision)
     implementation(libs.androidx.camera.extensions)
         implementation (libs.kotlinx.coroutines.play.services)
-    implementation(libs.firebase.firestore)
-    implementation(libs.firebase.storage)
+        implementation (libs.play.services.base)
 
+        // Compose dependencies
+        implementation (libs.ui)
+        implementation (libs.ui.tooling.preview)
+        implementation (libs.androidx.lifecycle.runtime.ktx.v261)
+        implementation (libs.androidx.activity.compose.v172)
+        implementation (libs.material3)
+
+        // Other dependencies
+        implementation (libs.firebase.auth.ktx)
+        implementation (libs.firebase.firestore.ktx.v2481)
+    }
 }

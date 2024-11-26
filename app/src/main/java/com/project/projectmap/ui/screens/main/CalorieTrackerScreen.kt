@@ -26,10 +26,13 @@ import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.project.projectmap.R
-import com.project.projectmap.ui.screens.camera.MainActivity
+import com.project.projectmap.ui.screens.camera.CameraActivity
 import com.project.projectmap.ui.theme.Purple40
 import com.project.projectmap.ui.theme.Purple80
 import kotlinx.coroutines.tasks.await
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 data class UserNutritionTarget(
     val fat: Float = 0f,
@@ -62,29 +65,47 @@ fun CalorieTrackerScreen(
     LaunchedEffect(currentUser?.uid) {
         currentUser?.let { user ->
             try {
-                val document = db.collection("userTargets")
+                // Get user targets
+                val targetDoc = db.collection("userTargets")
                     .document(user.uid)
                     .get()
                     .await()
 
-                if (document.exists()) {
+                if (targetDoc.exists()) {
                     nutritionTarget = UserNutritionTarget(
-                        fat = document.getDouble("fat")?.toFloat() ?: 0f,
-                        protein = document.getDouble("protein")?.toFloat() ?: 0f,
-                        carbohydrate = document.getDouble("carbohydrate")?.toFloat() ?: 0f,
-                        totalCalories = document.getLong("totalCalories")?.toInt() ?: 2000
+                        fat = targetDoc.getDouble("fat")?.toFloat() ?: 0f,
+                        protein = targetDoc.getDouble("protein")?.toFloat() ?: 0f,
+                        carbohydrate = targetDoc.getDouble("carbohydrate")?.toFloat() ?: 0f,
+                        totalCalories = targetDoc.getLong("totalCalories")?.toInt() ?: 2000
                     )
 
-                    // Set dummy current values (30-70% dari target)
-                    currentCarbs = nutritionTarget.carbohydrate * 0.5f
-                    currentProtein = nutritionTarget.protein * 0.6f
-                    currentFat = nutritionTarget.fat * 0.4f
-                    currentCalories = 200
+                    // Get today's nutrition entries
+                    val currentDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(
+                        Date()
+                    )
+                    val nutritionEntries = db.collection("dailyNutrition")
+                        .whereEqualTo("userId", user.uid)
+                        .whereEqualTo("date", currentDate)
+                        .get()
+                        .await()
+
+                    // Sum up all nutrition values for today
+                    currentCarbs = 0f
+                    currentProtein = 0f
+                    currentFat = 0f
+                    currentCalories = 0
+
+                    for (entry in nutritionEntries.documents) {
+                        currentCarbs += entry.getDouble("carbohydrate")?.toFloat() ?: 0f
+                        currentProtein += entry.getDouble("protein")?.toFloat() ?: 0f
+                        currentFat += entry.getDouble("fat")?.toFloat() ?: 0f
+                        currentCalories += entry.getDouble("calories")?.toInt() ?: 0
+                    }
                 } else {
                     errorMessage = "No nutrition target found. Please set your target."
                 }
             } catch (e: Exception) {
-                errorMessage = "Error loading nutrition target: ${e.message}"
+                errorMessage = "Error loading nutrition data: ${e.message}"
             } finally {
                 isLoading = false
             }
@@ -397,7 +418,7 @@ fun TrackEatButton() {
     val context = LocalContext.current
     Button(
         onClick = {
-            val intent = Intent(context, MainActivity::class.java)
+            val intent = Intent(context, CameraActivity::class.java)
             context.startActivity(intent)
         },
         modifier = Modifier

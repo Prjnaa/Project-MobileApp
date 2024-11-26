@@ -6,8 +6,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.tasks.await
 import com.project.projectmap.ui.screens.auth.login.LoginScreen
 import com.project.projectmap.ui.screens.auth.register.RegisterScreen
 import com.project.projectmap.ui.screens.badges.BadgesPage
@@ -140,20 +138,5 @@ fun AppNavGraph(
                 }
             )
         }
-    }
-}
-
-// Optional: Helper function to check if user should start with target screen
-suspend fun shouldStartWithTargetScreen(userId: String): Boolean {
-    return try {
-        val db = FirebaseFirestore.getInstance()
-        val document = db.collection("userTargets")
-            .document(userId)
-            .get()
-            .await()
-        !document.exists()
-    } catch (e: Exception) {
-        // If there's an error checking, default to false
-        false
     }
 }
