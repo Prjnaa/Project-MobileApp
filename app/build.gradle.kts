@@ -24,6 +24,12 @@ android {
         versionCode = 1
         versionName = "1.0"
 
+        buildConfigField(
+            "String",
+            "GOOGLE_API_TOKEN",
+            secretProperties["GOOGLE_API_TOKEN"] as String
+        )
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
@@ -49,6 +55,7 @@ android {
         jvmTarget = "1.8"
     }
     buildFeatures {
+        buildConfig = true
         compose = true
         buildConfig = true
     }
@@ -77,6 +84,7 @@ dependencies {
     implementation (platform(libs.firebase.bom))
     implementation (libs.play.services.auth)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.firebase.firestore.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -90,7 +98,18 @@ dependencies {
     implementation(libs.androidx.camera.view)
     implementation(libs.androidx.camera.mlkit.vision)
     implementation(libs.androidx.camera.extensions)
-    implementation(libs.firebase.firestore)
-    implementation(libs.firebase.storage)
+        implementation (libs.kotlinx.coroutines.play.services)
+        implementation (libs.play.services.base)
 
+        // Compose dependencies
+        implementation (libs.ui)
+        implementation (libs.ui.tooling.preview)
+        implementation (libs.androidx.lifecycle.runtime.ktx.v261)
+        implementation (libs.androidx.activity.compose.v172)
+        implementation (libs.material3)
+
+        // Other dependencies
+        implementation (libs.firebase.auth.ktx)
+        implementation (libs.firebase.firestore.ktx.v2481)
+    }
 }

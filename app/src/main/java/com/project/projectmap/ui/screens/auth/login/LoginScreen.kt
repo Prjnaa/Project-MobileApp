@@ -39,27 +39,27 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthException
-import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
-import com.google.firebase.auth.FirebaseAuthInvalidUserException
-import com.google.firebase.auth.FirebaseAuthUserCollisionException
-import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.*
+import com.project.projectmap.buildconfig.BuildConfig
+import com.google.firebase.firestore.FirebaseFirestore
 import com.project.projectmap.R
-import com.project.projectmap.ui.theme.Purple40
-import com.project.projectmap.ui.theme.Purple80
-import com.project.projectmap.ui.theme.PurpleGrey40
-import com.project.projectmap.ui.theme.PurpleGrey80
+import com.project.projectmap.ui.theme.*
 
 @Composable
-fun LoginScreen(onLoginSuccess: () -> Unit, onRegisterClick: () -> Unit) {
+fun LoginScreen(
+    onLoginSuccess: (Boolean) -> Unit,
+    onRegisterClick: () -> Unit
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
+
     val auth = FirebaseAuth.getInstance()
+    val db = FirebaseFirestore.getInstance()
     val context = LocalContext.current
 
     // Google Sign-In configuration
@@ -70,38 +70,58 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onRegisterClick: () -> Unit) {
             .requestEmail()
             .build()
     }
+
     val googleSignInClient = remember {
-        com.google.android.gms.auth.api.signin.GoogleSignIn.getClient(context, gso)
+        GoogleSignIn.getClient(context, gso)
     }
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            val task = com.google.android.gms.auth.api.signin.GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             try {
                 val account = task.getResult(ApiException::class.java)
                 account?.idToken?.let { idToken ->
+                    isLoading = true
                     val credential = GoogleAuthProvider.getCredential(idToken, null)
                     auth.signInWithCredential(credential)
                         .addOnCompleteListener { authTask ->
                             if (authTask.isSuccessful) {
                                 val user = auth.currentUser
-                                checkIfUserExists(user, onLoginSuccess)
+                                user?.let { firebaseUser ->
+                                    // Check if user has already set target
+                                    db.collection("userTargets")
+                                        .document(firebaseUser.uid)
+                                        .get()
+                                        .addOnSuccessListener { document ->
+                                            isLoading = false
+                                            val isNewUser = !document.exists()
+                                            onLoginSuccess(isNewUser)
+                                        }
+                                        .addOnFailureListener {
+                                            isLoading = false
+                                            errorMessage = "Error checking user data"
+                                        }
+                                }
                             } else {
+                                isLoading = false
                                 handleFirebaseException(authTask.exception) { message ->
                                     errorMessage = message
                                 }
                             }
                         }
                 } ?: run {
-                    errorMessage = "Google Sign-In failed: ID token is null."
+                    isLoading = false
+                    errorMessage = "Google Sign-In failed: ID token is null"
                 }
             } catch (e: ApiException) {
+                isLoading = false
                 errorMessage = "Google Sign-In error: ${e.message}"
             }
         } else {
-            errorMessage = "Google Sign-In canceled."
+            isLoading = false
+            errorMessage = "Google Sign-In cancelled"
         }
     }
 
@@ -142,12 +162,13 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onRegisterClick: () -> Unit) {
                 .fillMaxWidth()
                 .height(56.dp),
             shape = RoundedCornerShape(12.dp),
-            placeholder = { Text("Value", color = PurpleGrey40) },
+            placeholder = { Text("Enter your email", color = PurpleGrey40) },
             colors = OutlinedTextFieldDefaults.colors(
                 unfocusedBorderColor = PurpleGrey80,
                 focusedBorderColor = Purple40
             ),
-            singleLine = true
+            singleLine = true,
+            enabled = !isLoading
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -169,12 +190,13 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onRegisterClick: () -> Unit) {
                 .height(56.dp),
             shape = RoundedCornerShape(12.dp),
             visualTransformation = PasswordVisualTransformation(),
-            placeholder = { Text("Value", color = PurpleGrey40) },
+            placeholder = { Text("Enter your password", color = PurpleGrey40) },
             colors = OutlinedTextFieldDefaults.colors(
                 unfocusedBorderColor = PurpleGrey80,
                 focusedBorderColor = Purple40
             ),
-            singleLine = true
+            singleLine = true,
+            enabled = !isLoading
         )
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -185,12 +207,28 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onRegisterClick: () -> Unit) {
                 if (email.isEmpty() || password.isEmpty()) {
                     errorMessage = "Email and Password cannot be empty"
                 } else {
+                    isLoading = true
                     auth.signInWithEmailAndPassword(email, password)
                         .addOnCompleteListener { task ->
                             if (task.isSuccessful) {
                                 val user = auth.currentUser
-                                checkIfUserExists(user, onLoginSuccess)
+                                user?.let { firebaseUser ->
+                                    // Check if user has already set target
+                                    db.collection("userTargets")
+                                        .document(firebaseUser.uid)
+                                        .get()
+                                        .addOnSuccessListener { document ->
+                                            isLoading = false
+                                            val isNewUser = !document.exists()
+                                            onLoginSuccess(isNewUser)
+                                        }
+                                        .addOnFailureListener {
+                                            isLoading = false
+                                            errorMessage = "Error checking user data"
+                                        }
+                                }
                             } else {
+                                isLoading = false
                                 handleFirebaseException(task.exception) { message ->
                                     errorMessage = message
                                 }
@@ -202,16 +240,24 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onRegisterClick: () -> Unit) {
                 .fillMaxWidth()
                 .height(56.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Purple80)
+            colors = ButtonDefaults.buttonColors(containerColor = Purple80),
+            enabled = !isLoading
         ) {
-            Text(
-                "Login",
-                style = TextStyle(
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
                     color = Purple40
                 )
-            )
+            } else {
+                Text(
+                    "Login",
+                    style = TextStyle(
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Purple40
+                    )
+                )
+            }
         }
 
         // Error Message
@@ -257,20 +303,30 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onRegisterClick: () -> Unit) {
         // Google Sign In Button
         OutlinedButton(
             onClick = {
-                launcher.launch(googleSignInClient.signInIntent)
+                if (!isLoading) {
+                    launcher.launch(googleSignInClient.signInIntent)
+                }
             },
             modifier = Modifier
                 .size(width = 120.dp, height = 60.dp)
                 .align(Alignment.CenterHorizontally),
             shape = RoundedCornerShape(12.dp),
-            border = ButtonDefaults.outlinedButtonBorder
+            border = ButtonDefaults.outlinedButtonBorder,
+            enabled = !isLoading
         ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_google),
-                contentDescription = "Google Sign In",
-                tint = Color.Unspecified,
-                modifier = Modifier.size(24.dp)
-            )
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = Purple40
+                )
+            } else {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_google),
+                    contentDescription = "Google Sign In",
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -291,7 +347,10 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onRegisterClick: () -> Unit) {
             )
             Text(
                 "Register Now",
-                modifier = Modifier.clickable(onClick = onRegisterClick),
+                modifier = Modifier.clickable(
+                    enabled = !isLoading,
+                    onClick = onRegisterClick
+                ),
                 style = TextStyle(
                     fontSize = 14.sp,
                     color = PurpleGrey40,
@@ -299,12 +358,6 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onRegisterClick: () -> Unit) {
                 )
             )
         }
-    }
-}
-
-private fun checkIfUserExists(user: FirebaseUser?, onLoginSuccess: () -> Unit) {
-    user?.let {
-        onLoginSuccess()
     }
 }
 

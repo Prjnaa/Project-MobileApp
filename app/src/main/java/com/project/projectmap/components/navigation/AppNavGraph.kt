@@ -5,6 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.auth.FirebaseAuth
 import com.project.projectmap.ui.screens.auth.login.LoginScreen
 import com.project.projectmap.ui.screens.auth.register.RegisterScreen
 import com.project.projectmap.ui.screens.badges.BadgesPage
@@ -24,16 +25,27 @@ object AppDestinations {
 }
 
 @Composable
-fun AppNavGraph(navController: NavHostController = rememberNavController()) {
+fun AppNavGraph(
+    navController: NavHostController = rememberNavController(),
+    startDestination: String = AppDestinations.LOGIN_ROUTE
+) {
     NavHost(
         navController = navController,
-        startDestination = AppDestinations.LOGIN_ROUTE
+        startDestination = startDestination
     ) {
         composable(AppDestinations.LOGIN_ROUTE) {
             LoginScreen(
-                onLoginSuccess = {
-                    navController.navigate(AppDestinations.CALORIE_TRACKER_ROUTE) {
-                        popUpTo(AppDestinations.LOGIN_ROUTE) { inclusive = true }
+                onLoginSuccess = { isNewUser ->
+                    if (isNewUser) {
+                        // If new user, navigate to set target first
+                        navController.navigate(AppDestinations.NEW_TARGET_ROUTE) {
+                            popUpTo(AppDestinations.LOGIN_ROUTE) { inclusive = true }
+                        }
+                    } else {
+                        // If existing user, go directly to calorie tracker
+                        navController.navigate(AppDestinations.CALORIE_TRACKER_ROUTE) {
+                            popUpTo(AppDestinations.LOGIN_ROUTE) { inclusive = true }
+                        }
                     }
                 },
                 onRegisterClick = {
@@ -45,10 +57,37 @@ fun AppNavGraph(navController: NavHostController = rememberNavController()) {
         composable(AppDestinations.REGISTER_ROUTE) {
             RegisterScreen(
                 onRegisterSuccess = {
-                    navController.popBackStack()
+                    // After registration, navigate to set target
+                    navController.navigate(AppDestinations.NEW_TARGET_ROUTE) {
+                        popUpTo(AppDestinations.REGISTER_ROUTE) { inclusive = true }
+                    }
                 },
                 onNavigateToLogin = {
-                    navController.popBackStack(AppDestinations.LOGIN_ROUTE, false)
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(AppDestinations.NEW_TARGET_ROUTE) {
+            NewTargetScreen(
+                onClose = {
+                    // On close, check if user has target set
+                    val currentUser = FirebaseAuth.getInstance().currentUser
+                    if (currentUser != null) {
+                        navController.navigate(AppDestinations.CALORIE_TRACKER_ROUTE) {
+                            popUpTo(AppDestinations.NEW_TARGET_ROUTE) { inclusive = true }
+                        }
+                    } else {
+                        // If somehow there's no user, go back to login
+                        navController.navigate(AppDestinations.LOGIN_ROUTE) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                },
+                onContinue = {
+                    navController.navigate(AppDestinations.CALORIE_TRACKER_ROUTE) {
+                        popUpTo(AppDestinations.NEW_TARGET_ROUTE) { inclusive = true }
+                    }
                 }
             )
         }
@@ -66,17 +105,6 @@ fun AppNavGraph(navController: NavHostController = rememberNavController()) {
                 },
                 onNavigateToNewTarget = {
                     navController.navigate(AppDestinations.NEW_TARGET_ROUTE)
-                }
-            )
-        }
-
-        composable(AppDestinations.NEW_TARGET_ROUTE) {
-            NewTargetScreen(
-                onClose = {
-                    navController.popBackStack()
-                },
-                onContinue = {
-                    navController.popBackStack()
                 }
             )
         }
