@@ -35,7 +35,6 @@ object LightColors {
     val OnSurfaceVariant = Color(0xFF49454F)
     val Outline = Color(0xFF79747E)
 
-    // Accent Colors
     val AccentPink = Color(0xFFFF4081)
     val AccentLavender = Color(0xFFE1BEE7)
     val AccentPeriwinkle = Color(0xFFCCCFFF)
