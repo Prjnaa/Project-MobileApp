@@ -52,6 +52,7 @@ fun CalorieTrackerScreen(
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+
     val currentUser = FirebaseAuth.getInstance().currentUser
     val db = FirebaseFirestore.getInstance()
 
@@ -448,11 +449,39 @@ fun SetNewTarget(onNewTargetClick: () -> Unit) {
 
 @Composable
 fun DailyChallenges(onHistoryClick: () -> Unit = {}) {
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val db = FirebaseFirestore.getInstance()
+
+    // State untuk menampung daftar tantangan dari Firestore
+    var challenges by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    // Mengambil data tantangan dari Firestore
+    LaunchedEffect(currentUser?.uid) {
+        try {
+            currentUser?.let { user ->
+                val currentDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+                val challengeSnapshot = db.collection("dailyNutrition")
+                    .whereEqualTo("userId", user.uid)
+                    .whereEqualTo("date", currentDate)
+                    .get()
+                    .await()
+
+                challenges = challengeSnapshot.documents.mapNotNull { it.data }
+            }
+        } catch (e: Exception) {
+            errorMessage = "Error fetching daily history: ${e.message}"
+        } finally {
+            isLoading = false
+        }
+    }
+
+    // UI untuk Daily Challenges
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            // Fixed height for the card to show ~3.5 items
-            .height(380.dp),
+            .height(380.dp), // Tetapkan tinggi sesuai kebutuhan
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFFF3E5F5)
         ),
@@ -476,32 +505,44 @@ fun DailyChallenges(onHistoryClick: () -> Unit = {}) {
                     contentDescription = "History",
                     modifier = Modifier
                         .size(24.dp)
-                        .clickable { onHistoryClick()}
+                        .clickable { onHistoryClick() }
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Separate scrollable container for challenge items
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    // Calculate height to show ~3.5 items
-                    // Available space = Card height (380) - padding (32) - header (~40) - spacing (16) ≈ 292dp
-                    .height(292.dp)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                ChallengeItem("Challenge 4", "Drink Milk today!", true)
-                Spacer(modifier = Modifier.height(8.dp))
-                ChallengeItem("Challenge 3", "Drink Fanta today!", false)
-                Spacer(modifier = Modifier.height(8.dp))
-                ChallengeItem("Challenge 2", "Eat Soto today!", false)
-                Spacer(modifier = Modifier.height(8.dp))
-                ChallengeItem("Challenge 1", "Eat Veggie Salad!", true)
-                Spacer(modifier = Modifier.height(8.dp))
-                ChallengeItem("Challenge 0", "Drink Water!", true)
-                Spacer(modifier = Modifier.height(8.dp))
-                ChallengeItem("Previous Challenge", "Exercise 30 minutes!", true)
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    color = Color.Gray
+                )
+            } else if (errorMessage != null) {
+                Text(
+                    text = errorMessage ?: "Unknown error",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    textAlign = TextAlign.Center
+                )
+            } else {
+                // Daftar tantangan dari Firestore
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(292.dp) // Sesuaikan tinggi
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    challenges.forEach { challenge ->
+                        ChallengeItem(
+                            title = challenge["foodName"]?.toString() ?: "Unknown",
+                            description = "Calories: ${(challenge["calories"] as? Number)?.toInt() ?: 0}",
+                            isCompleted = true // Sesuaikan logika untuk status selesai
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
             }
         }
     }
