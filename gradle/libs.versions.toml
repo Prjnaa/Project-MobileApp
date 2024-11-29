@@ -1,6 +1,6 @@
 [versions]
 activityComposeVersion = "1.7.2"
-agp = "8.5.2"
+agp = "8.7.2"
 firebaseAuthKtx = "23.1.0"
 firebaseBom = "33.4.0"
 firebaseFirestoreKtxVersion = "24.8.1"
