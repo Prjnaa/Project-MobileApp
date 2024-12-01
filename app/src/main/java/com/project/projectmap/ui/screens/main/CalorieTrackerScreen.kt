@@ -200,7 +200,7 @@ fun CalorieTrackerScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        TrackEatButton()
+        TrackEatButton1()
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -414,7 +414,7 @@ fun CalorieProgress(
 }
 
 @Composable
-fun TrackEatButton() {
+fun TrackEatButton1() {
     val context = LocalContext.current
     Button(
         onClick = {
