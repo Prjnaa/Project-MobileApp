@@ -21,7 +21,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.firestore.FirebaseFirestore
 import com.project.projectmap.R
+import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle
@@ -31,6 +33,28 @@ import java.util.*
 fun CalendarPage(onClose: () -> Unit) {
     var currentMonth by remember { mutableStateOf(YearMonth.now()) }
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+    var dailyHistory by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val db = FirebaseFirestore.getInstance()
+
+    // Fetch data for the selected date
+    LaunchedEffect(selectedDate) {
+        try {
+            isLoading = true
+            val snapshot = db.collection("dailyNutrition")
+                .whereEqualTo("date", selectedDate.toString())
+                .get()
+                .await()
+
+            dailyHistory = snapshot.documents.mapNotNull { it.data }
+        } catch (e: Exception) {
+            errorMessage = "Error fetching data: ${e.message}"
+        } finally {
+            isLoading = false
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -99,7 +123,6 @@ fun CalendarPage(onClose: () -> Unit) {
         val lastDayOfMonth = currentMonth.atEndOfMonth()
         val firstDayOfWeek = firstDayOfMonth.dayOfWeek.value % 7
 
-        var dayCounter = 1
         for (week in 0..5) {
             if (week * 7 < firstDayOfWeek + lastDayOfMonth.dayOfMonth) {
                 Row(
@@ -175,16 +198,33 @@ fun CalendarPage(onClose: () -> Unit) {
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
-                // Challenge items for selected date
-                ChallengeHistoryItem("Challenge 3", "Drink milk today!", true)
-                Spacer(modifier = Modifier.height(8.dp))
-                ChallengeHistoryItem("Challenge 2", "Drink milk today!", true)
-                Spacer(modifier = Modifier.height(8.dp))
-                ChallengeHistoryItem("Challenge 1", "Drink milk today!", true)
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                        color = Color.Gray
+                    )
+                } else if (errorMessage != null) {
+                    Text(
+                        text = errorMessage ?: "Unknown error",
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                } else {
+                    dailyHistory.forEach { history ->
+                        ChallengeHistoryItem(
+                            challengeTitle = history["foodName"]?.toString() ?: "Unknown",
+                            description = "Calories: ${(history["calories"] as? Number)?.toInt() ?: 0}",
+                            isCompleted = true
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
             }
         }
     }
 }
+
 
 @Composable
 fun ChallengeHistoryItem(

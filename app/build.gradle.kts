@@ -1,5 +1,5 @@
-import java.io.FileInputStream
 import java.util.Properties
+import java.io.FileInputStream
 
 plugins {
     alias(libs.plugins.android.application)
@@ -7,10 +7,12 @@ plugins {
     alias(libs.plugins.google.gms.google.services)
 }
 
-val secretPropertiesFile = rootProject.file("secrets.properties")
-
-val secretProperties = Properties().apply {
-    load(FileInputStream(secretPropertiesFile))
+val secretPropertiesFile = rootProject.file("secret.properties")
+val secretProperties = Properties()
+if (secretPropertiesFile.exists()) {
+    secretProperties.load(FileInputStream(secretPropertiesFile))
+} else {
+    secretProperties["GOOGLE_API_TOKEN"] = "\"default-token\""
 }
 
 android {
@@ -24,16 +26,16 @@ android {
         versionCode = 1
         versionName = "1.0"
 
+        buildConfigField(
+            "String",
+            "GOOGLE_API_TOKEN",
+            secretProperties["GOOGLE_API_TOKEN"] as String
+        )
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
-
-        buildConfigField(
-            "String",
-            "GOOGLE_API_TOKEN",
-            "\"${secretProperties["GOOGLE_API_TOKEN"]}\""
-        )
     }
 
     buildTypes {
@@ -53,8 +55,8 @@ android {
         jvmTarget = "1.8"
     }
     buildFeatures {
-        compose = true
         buildConfig = true
+        compose = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.1"
@@ -67,38 +69,22 @@ android {
 }
 
 
+
 dependencies {
-// Core Libraries
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-
-// Compose UI
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation(libs.androidx.navigation.compose)
-
-// Firebase
     implementation(libs.firebase.auth)
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.firestore)
-    implementation(libs.firebase.storage)
-
-// Play Services
-    implementation(libs.play.services.auth)
-
-// Camera (for ML Kit and other camera functionality)
-    implementation(libs.androidx.camera.core)
-    implementation(libs.androidx.camera.camera2)
-    implementation(libs.androidx.camera.lifecycle)
-    implementation(libs.androidx.camera.view)
-    implementation(libs.androidx.camera.mlkit.vision)
-    implementation(libs.androidx.camera.extensions)
-
-// Testing
+    implementation (platform(libs.firebase.bom))
+    implementation (libs.play.services.auth)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.firebase.firestore.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -106,4 +92,31 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    dependencies {
+        // The following line is optional, as the core library is included indirectly by camera-camera2
+        implementation(libs.androidx.camera.core)
+        implementation(libs.androidx.camera.camera2)
+        // If you want to additionally use the CameraX Lifecycle library
+        implementation(libs.androidx.camera.lifecycle)
+        // If you want to additionally use the CameraX View class
+        implementation(libs.androidx.camera.view)
+        // If you want to additionally add CameraX ML Kit Vision Integration
+        implementation(libs.androidx.camera.mlkit.vision)
+        // If you want to additionally use the CameraX Extensions library
+        implementation(libs.androidx.camera.extensions)
+        implementation (libs.kotlinx.coroutines.play.services)
+        implementation (libs.play.services.base)
+
+        // Compose dependencies
+        implementation (libs.ui)
+        implementation (libs.ui.tooling.preview)
+        implementation (libs.androidx.lifecycle.runtime.ktx.v261)
+        implementation (libs.androidx.activity.compose.v172)
+        implementation (libs.material3)
+
+        // Other dependencies
+        implementation (libs.firebase.auth.ktx)
+        implementation (libs.firebase.firestore.ktx.v2481)
+    }
 }
