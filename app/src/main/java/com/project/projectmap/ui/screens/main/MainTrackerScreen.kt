@@ -209,7 +209,9 @@ fun Tracker(modifier: Modifier = Modifier) {
 
 @Composable
 fun ChallengeList(modifier: Modifier = Modifier) {
+    Row() {
 
+    }
 }
 
 //MAIN TRACKER SCREEN COMPOSABLE COMPONENTS
