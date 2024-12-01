@@ -15,14 +15,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -35,6 +33,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,7 +43,7 @@ import com.project.projectmap.ui.theme.ProjectmapTheme
 @Composable
 @Preview(showBackground = true)
 fun MainTrackerScreenPreviewLight() {
-    ProjectmapTheme(darkTheme = false) {
+    ProjectmapTheme(darkTheme = true) {
         MainTrackerScreen()
     }
 }
@@ -198,7 +197,7 @@ fun Tracker(modifier: Modifier = Modifier) {
         )
 
 //        MAIN CALORIE TRACKER
-        CalorieTracker(current = 1000, target = 2000)
+        CalorieTracker(current = 1500, target = 2000)
 
 //        TRACK EAT BUTTONS
         TrackEatButton()
@@ -274,7 +273,7 @@ fun CalorieTracker(current: Int, target: Int) {
 //TRACK EAT BUTTON
 @Composable
 fun TrackEatButton() {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+    Row(modifier = Modifier.offset(y = (-112).dp), horizontalArrangement = Arrangement.Center) {
         Button(
             onClick = { /*TODO*/ },
             colors = ButtonDefaults.buttonColors(
@@ -298,8 +297,10 @@ fun SetNewTargetLink() {
         fontSize = 16.sp,
         color = MaterialTheme.colorScheme.tertiary,
         textAlign = TextAlign.Center,
+        textDecoration = TextDecoration.Underline,
         modifier = Modifier
             .padding(top = 16.dp)
+            .offset(y = (-64).dp)
 
     )
 }
