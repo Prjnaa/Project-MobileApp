@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -61,21 +62,21 @@ fun ChallengesPreview() {
     }
 }
 
-
+// Main UI Function
 @Composable
 fun MainTrackerScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(color = MaterialTheme.colorScheme.background)
-            .padding(horizontal = 16.dp, vertical = 32.dp)
+            .padding(start = 16.dp, top = 54.dp, end = 16.dp, bottom = 0.dp)
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+        verticalArrangement = Arrangement.spacedBy(32.dp)
     ) {
         TopBar()
         CurrentStats()
         Tracker()
-//        ChallengeList()
+        ChallengeList()
     }
 }
 
@@ -122,7 +123,9 @@ fun TopBar(modifier: Modifier = Modifier) {
                     onClick = { /* TODO: Handle Button 1 click */ },
                     modifier = Modifier
                         .height(40.dp),
-                    contentPadding = PaddingValues(0.dp)
+                    contentPadding = PaddingValues(0.dp),
+                    shape = RoundedCornerShape(16.dp)
+
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -152,6 +155,7 @@ fun TopBar(modifier: Modifier = Modifier) {
                     onClick = { /* TODO: Handle Button 2 click */ },
                     modifier = Modifier.height(40.dp),
                     contentPadding = PaddingValues(0.dp),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -177,7 +181,7 @@ fun TopBar(modifier: Modifier = Modifier) {
 
 
 @Composable
-fun CurrentStats(modifier: Modifier = Modifier) {
+fun CurrentStats() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -205,7 +209,7 @@ fun Tracker(modifier: Modifier = Modifier) {
             contentDescription = "Tracker Illustration",
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 32.dp)
+                .padding(top = 12.dp, bottom = 32.dp)
         )
 
 //        MAIN CALORIE TRACKER
@@ -221,12 +225,12 @@ fun Tracker(modifier: Modifier = Modifier) {
 
 @Composable
 fun ChallengeList() {
-    val items = List(20) { index -> "Item #${index}" } //Sample
+    val items = List(20) { index -> "This is challenge number #${index}" } //Sample
 
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .defaultMinSize(minHeight = 400.dp),
+            .height(600.dp),
         color = MaterialTheme.colorScheme.primaryContainer,
         shape = RoundedCornerShape(16.dp),
 
@@ -235,22 +239,43 @@ fun ChallengeList() {
             modifier = Modifier
                 .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                text = "Today's Challenges",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Today's Challenges",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Button(
+                    onClick = { /*TODO*/ },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent,
+                        contentColor = MaterialTheme.colorScheme.primary
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    contentPadding = PaddingValues(2.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.calendar_24),
+                        contentDescription = "Calendar Icon",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+            }
 
             LazyColumn(
-                modifier = Modifier
-                    .padding(vertical = 24.dp)
-                    .border(color = Color.Red, width = 1.dp)
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 itemsIndexed(items) { index, item ->
-                    ChallengeItem(index = index, text = item, isDone = false)
+                    val random = (1..100).random() //Sample
+                    ChallengeItem(index = index, text = item, isDone = false, coinCount = random)
                 }
             }
         }
@@ -345,7 +370,7 @@ fun SetNewTargetLink() {
         textDecoration = TextDecoration.Underline,
         modifier = Modifier
             .padding(top = 16.dp)
-            .offset(y = (-64).dp)
+            .offset(y = (-72).dp)
 
     )
 }
@@ -376,26 +401,51 @@ fun MacroItem(title: String, progress: Float) {
     }
 }
 
-//CHALLENGE CARD
+//CHALLENGE ITEM
 @Composable
-fun ChallengeItem(index: Int, text: String, isDone: Boolean) {
+fun ChallengeItem(index: Int, text: String, isDone: Boolean, coinCount: Int) {
     Surface(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxSize(),
+        color = MaterialTheme.colorScheme.primary,
+        shape = RoundedCornerShape(16.dp)
+
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-                .background(Color.LightGray),
-            verticalAlignment = Alignment.CenterVertically
+
         ) {
-            Text(
-                text = "Index $index: ",
-                modifier = Modifier.padding(end = 8.dp)
-            )
-            Text(
-                text = text,
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, top = 16.dp, bottom = 16.dp)
+                    .weight(1.0f)
+            ) {
+                Text(
+                    text = "Challenge $index",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                Text(
+                    text = text,
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Text(
+                        "+ $coinCount Coins"
+                    )
+                }
+            }
+
+            Icon(
+                painter = painterResource(R.drawable.check_circle_24),
+                contentDescription = "Check Icon",
+                modifier = Modifier
+                    .offset(x = (-24).dp, y = 20.dp)
+                    .size(32.dp)
             )
         }
     }
