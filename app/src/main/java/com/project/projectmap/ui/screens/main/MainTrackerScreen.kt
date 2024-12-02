@@ -3,14 +3,12 @@ package com.project.projectmap.ui.screens.main
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.absoluteOffset
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,11 +25,14 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -44,7 +45,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.project.projectmap.R
+import com.project.projectmap.firebase.model.CalorieTrackerViewModel
 import com.project.projectmap.ui.theme.ProjectmapTheme
+import kotlin.random.Random
 
 @Composable
 @Preview(showBackground = true)
@@ -64,7 +67,18 @@ fun ChallengesPreview() {
 
 // Main UI Function
 @Composable
-fun MainTrackerScreen() {
+fun MainTrackerScreen(
+    onNavigateToCalendar: () -> Unit = {},
+    onNavigateToBadges: () -> Unit = {},
+    onNavigateToProfile: () -> Unit = {},
+    onNavigateToNewTarget: () -> Unit = {},
+    viewModel: CalorieTrackerViewModel = CalorieTrackerViewModel()
+) {
+    val nutritionData by viewModel.nutritionData.collectAsState()
+    val nutritionTarget by viewModel.nutritionTarget.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -74,9 +88,34 @@ fun MainTrackerScreen() {
         verticalArrangement = Arrangement.spacedBy(32.dp)
     ) {
         TopBar()
-        CurrentStats()
-        Tracker()
-        ChallengeList()
+        if (isLoading) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+        } else if (errorMessage != null) {
+            Text(
+                errorMessage ?: "Error",
+                color = Color.Red,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+        } else {
+            nutritionData?.let { data ->
+                CurrentStats(
+                    carbsProgress = data.currentCarbs,
+                    proteinProgress = data.currentProtein,
+                    fatProgress = data.currentFat
+                )
+            }
+            nutritionTarget?.let { targetData ->
+                Tracker(
+                    currentCalories = nutritionData.currentCalories,
+                    targetCalories = targetData.totalCalories
+                )
+
+            }
+        }
+
+        ChallengeList(
+            onNavToCalendar = onNavigateToCalendar
+        )
     }
 }
 
@@ -181,7 +220,11 @@ fun TopBar(modifier: Modifier = Modifier) {
 
 
 @Composable
-fun CurrentStats() {
+fun CurrentStats(
+    carbsProgress: Float = 0.0f,
+    proteinProgress: Float = 0.0f,
+    fatProgress: Float = 0.0f
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -189,17 +232,19 @@ fun CurrentStats() {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        MacroItem(title = "Carbs", progress = 0.8f)
-        MacroItem(title = "Protein", progress = 0.6f)
-        MacroItem(title = "Fat", progress = 0.4f)
+        MacroItem(title = "Carbs", progress = carbsProgress)
+        MacroItem(title = "Protein", progress = proteinProgress)
+        MacroItem(title = "Fat", progress = fatProgress)
     }
 }
 
 
 @Composable
-fun Tracker(modifier: Modifier = Modifier) {
+fun Tracker(
+    currentCalories: Int = 999, targetCalories: Int = 9999
+) {
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -213,7 +258,7 @@ fun Tracker(modifier: Modifier = Modifier) {
         )
 
 //        MAIN CALORIE TRACKER
-        CalorieTracker(current = 1500, target = 2000)
+        CalorieTracker(current = currentCalories, target = targetCalories)
 
 //        TRACK EAT BUTTONS
         TrackEatButton()
@@ -224,7 +269,9 @@ fun Tracker(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun ChallengeList() {
+fun ChallengeList(
+    onNavToCalendar: () -> Unit = {}
+) {
     val items = List(20) { index -> "This is challenge number #${index}" } //Sample
 
     Surface(
@@ -261,12 +308,20 @@ fun ChallengeList() {
                     shape = RoundedCornerShape(16.dp),
                     contentPadding = PaddingValues(2.dp)
                 ) {
-                    Icon(
-                        painter = painterResource(R.drawable.calendar_24),
-                        contentDescription = "Calendar Icon",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(32.dp)
-                    )
+//                    CALENDAR NAVIGATE BUTTON
+                    IconButton(
+                        onClick = {
+                            onNavToCalendar()
+                        }
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.calendar_24),
+                            contentDescription = "Calendar Icon",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+
                 }
             }
 
@@ -275,7 +330,8 @@ fun ChallengeList() {
             ) {
                 itemsIndexed(items) { index, item ->
                     val random = (1..100).random() //Sample
-                    ChallengeItem(index = index, text = item, isDone = false, coinCount = random)
+                    val isDone = Random.nextBoolean() //Sample
+                    ChallengeItem(index = index, text = item, isDone = isDone, coinCount = random)
                 }
             }
         }
@@ -350,11 +406,11 @@ fun TrackEatButton() {
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(12.dp),
             modifier = Modifier
                 .size(width = 250.dp, height = 48.dp),
         ) {
-            Text(text = "Track Eat")
+            Text(text = "Track Eat", fontSize = 16.sp)
         }
     }
 }
@@ -371,6 +427,7 @@ fun SetNewTargetLink() {
         modifier = Modifier
             .padding(top = 16.dp)
             .offset(y = (-72).dp)
+            .clickable { /*TODO: Set New target link*/ }
 
     )
 }
@@ -378,12 +435,13 @@ fun SetNewTargetLink() {
 //MACRO ITEM
 @Composable
 fun MacroItem(title: String, progress: Float) {
+    val constrainedProgress = progress.coerceIn(0f, 1f)
     Column(
         verticalArrangement = Arrangement.spacedBy(4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         CircularProgressIndicator(
-            progress = progress,
+            progress = constrainedProgress,
 
             modifier = Modifier
                 .size(48.dp),
@@ -403,50 +461,64 @@ fun MacroItem(title: String, progress: Float) {
 
 //CHALLENGE ITEM
 @Composable
-fun ChallengeItem(index: Int, text: String, isDone: Boolean, coinCount: Int) {
+fun ChallengeItem(
+    index: Int,
+    title: String = "Default Title $index",
+    text: String,
+    isDone: Boolean,
+    coinCount: Int
+) {
+    val capitalizedTitle = title.split(" ").joinToString(" ") { it.capitalize() }
+
     Surface(
         modifier = Modifier
-            .fillMaxSize(),
+            .fillMaxWidth(),  // Ensure it fills the width
         color = MaterialTheme.colorScheme.primary,
         shape = RoundedCornerShape(16.dp)
-
     ) {
         Row(
-
+            modifier = Modifier.padding(16.dp),  // Add padding to the Row
+            horizontalArrangement = Arrangement.SpaceBetween,  // Space out content
+            verticalAlignment = Alignment.Top // Center align vertically
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, top = 16.dp, bottom = 16.dp)
-                    .weight(1.0f)
+                    .weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = "Challenge $index",
+                    text = capitalizedTitle,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(end = 8.dp)
                 )
                 Text(
                     text = text,
+                    fontSize = 16.sp,
                 )
-                Row(
+            }
+
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.Bottom)
+            ) {
+
+                Icon(
+                    painter = painterResource(R.drawable.check_circle_24),
+                    contentDescription = "Check Icon",
+                    tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = if (isDone) 1f else 0.0f),
                     modifier = Modifier
-                        .fillMaxSize(),
-                    horizontalArrangement = Arrangement.End
+                        .size(32.dp)
+                )
+
+                Row(
                 ) {
                     Text(
-                        "+ $coinCount Coins"
+                        "+ $coinCount Coins", fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = if (isDone) 1f else 0.0f)
                     )
                 }
             }
-
-            Icon(
-                painter = painterResource(R.drawable.check_circle_24),
-                contentDescription = "Check Icon",
-                modifier = Modifier
-                    .offset(x = (-24).dp, y = 20.dp)
-                    .size(32.dp)
-            )
         }
     }
 }

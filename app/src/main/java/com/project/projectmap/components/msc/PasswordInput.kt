@@ -37,7 +37,7 @@ fun PasswordInput(
     OutlinedTextField(
         value = password,
         onValueChange = onPasswordChange,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
         label = { Text(label) },
         visualTransformation = if (isVisible) VisualTransformation.None else PasswordVisualTransformation(),
         trailingIcon = {

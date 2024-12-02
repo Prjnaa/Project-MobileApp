@@ -1,4 +1,4 @@
-package com.project.projectmap.model
+package com.project.projectmap.firebase.model
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -15,7 +15,7 @@ data class UserNutritionTarget(
     val fat: Float = 0f,
     val protein: Float = 0f,
     val carbohydrate: Float = 0f,
-    val totalCalories: Int = 2000 // default value
+    val totalCalories: Int = 2000
 )
 
 data class NutritionData(
@@ -73,8 +73,7 @@ class CalorieTrackerViewModel : ViewModel() {
                             .whereEqualTo("date", currentDate)
                             .get()
                             .await()
-
-                        // Sum up all nutrition values for today
+                        
                         var currentCarbs = 0f
                         var currentProtein = 0f
                         var currentFat = 0f
