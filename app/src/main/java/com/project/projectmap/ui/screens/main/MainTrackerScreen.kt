@@ -123,7 +123,7 @@ fun TopBar(modifier: Modifier = Modifier) {
                     onClick = { /* TODO: Handle Button 1 click */ },
                     modifier = Modifier
                         .height(40.dp),
-                    contentPadding = PaddingValues(0.dp),
+                    contentPadding = PaddingValues(2.dp),
                     shape = RoundedCornerShape(16.dp)
 
                 ) {
@@ -154,7 +154,7 @@ fun TopBar(modifier: Modifier = Modifier) {
                 Button(
                     onClick = { /* TODO: Handle Button 2 click */ },
                     modifier = Modifier.height(40.dp),
-                    contentPadding = PaddingValues(0.dp),
+                    contentPadding = PaddingValues(2.dp),
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Row(

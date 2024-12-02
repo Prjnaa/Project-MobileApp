@@ -267,9 +267,9 @@ fun ChallengeHistoryItem(
 
             if (isCompleted) {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_check),
+                    painter = painterResource(id = R.drawable.check_circle_24),
                     contentDescription = "Completed",
-                    tint = Color(0xFF8B80F9),
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
             }

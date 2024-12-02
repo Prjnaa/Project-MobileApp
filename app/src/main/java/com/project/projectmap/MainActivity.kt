@@ -8,8 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import com.project.projectmap.ui.screens.main.MainTrackerScreen
-import com.project.projectmap.ui.screens.main.MainTrackerScreenPreview
+import com.project.projectmap.ui.screens.auth.login.LoginScreen
+import com.project.projectmap.ui.screens.auth.login.LoginScreenRev
 import com.project.projectmap.ui.theme.ProjectmapTheme
 
 class MainActivity : ComponentActivity() {
@@ -23,7 +23,8 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                   MainTrackerScreen()
+//                   MainTrackerScreen()
+                    LoginScreenRev()
                 }
             }
         }

@@ -1,4 +1,5 @@
 package com.project.projectmap.ui.screens.auth.register
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
@@ -10,8 +11,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.android.gms.auth.api.phone.SmsCodeAutofillClient.PermissionState
+import com.project.projectmap.ui.theme.ProjectmapTheme
 
 
 // Bagian Fungsi Untuk View
@@ -49,7 +53,10 @@ fun RegisterScreen() {
             Spacer(modifier = Modifier.height(8.dp))
 
             // Calorie Target Field
-            TextFieldWithLabel(label = "Set Your Calories Target", keyboardType = KeyboardType.Number)
+            TextFieldWithLabel(
+                label = "Set Your Calories Target",
+                keyboardType = KeyboardType.Number
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -102,14 +109,6 @@ fun TextFieldWithLabel(
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             modifier = Modifier
                 .fillMaxWidth(),
-            colors = TextFieldDefaults.color(
-                containerColor = Color.Transparent,
-                focusedBorderColor = Color(0xFFB983FF),
-                unfocusedBorderColor = Color.Gray,
-                textColor = Color.White,
-                cursorColor = Color.White,
-                placeholderColor = Color.Gray
-            ),
             placeholder = {
                 Text(text = label, color = Color.Gray)
             },
@@ -148,3 +147,12 @@ fun GoogleLoginButton() {
     }
 }
 // Component Untuk View End
+
+@Composable
+@Preview(showBackground = true)
+fun RegisterScreenPreview() {
+    ProjectmapTheme() {
+        RegisterScreen()
+
+    }
+}
