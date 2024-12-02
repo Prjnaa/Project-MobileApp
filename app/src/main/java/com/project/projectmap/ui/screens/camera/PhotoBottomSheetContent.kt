@@ -1,6 +1,5 @@
 package com.project.projectmap.ui.screens.camera
 
-import android.app.Activity
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -27,7 +26,8 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PhotoBottomSheetContent(
-    onDismiss: () -> Unit = {}
+    onDismiss: () -> Unit = {},
+    onSubmitSuccess: () -> Unit = {}
 ) {
     var fat by remember { mutableStateOf(1.9f) }
     var carbohydrate by remember { mutableStateOf(5.8f) }
@@ -41,7 +41,6 @@ fun PhotoBottomSheetContent(
     val currentUser = FirebaseAuth.getInstance().currentUser
     val db = FirebaseFirestore.getInstance()
     val context = LocalContext.current
-    val activity = context as? Activity
 
     Column(
         modifier = Modifier
@@ -108,10 +107,8 @@ fun PhotoBottomSheetContent(
                         .add(nutritionEntry)
                         .addOnSuccessListener {
                             Toast.makeText(context, "Nutrition tracked successfully!", Toast.LENGTH_SHORT).show()
-                            onDismiss()
-                            // Set result and finish activity
-                            activity?.setResult(Activity.RESULT_OK)
-                            activity?.finish()
+                            // Panggil callback submit success
+                            onSubmitSuccess()
                         }
                         .addOnFailureListener { e ->
                             Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -139,8 +136,19 @@ fun EditableNutrientInfo(name: String, amount: Float, onValueChange: (Float) -> 
         TextField(
             value = amount.toString(),
             onValueChange = {
+                // Gantilah koma dengan titik dan pastikan bahwa input valid sebagai angka desimal
                 val sanitizedInput = it.replace(",", ".")
-                onValueChange(sanitizedInput.toFloatOrNull() ?: 0f)
+
+                // Cek apakah input valid (angka desimal) dan ubah ke Float
+                val parsedValue = try {
+                    sanitizedInput.toFloat()
+                } catch (e: NumberFormatException) {
+                    // Jika parsing gagal, fallback ke 0f
+                    0f
+                }
+
+                // Update nilai setelah parsing berhasil
+                onValueChange(parsedValue)
             },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true,
@@ -155,3 +163,4 @@ fun EditableNutrientInfo(name: String, amount: Float, onValueChange: (Float) -> 
         )
     }
 }
+

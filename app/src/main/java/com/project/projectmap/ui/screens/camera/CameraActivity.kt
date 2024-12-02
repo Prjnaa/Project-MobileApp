@@ -1,8 +1,10 @@
+// CameraActivity.kt
 package com.project.projectmap.ui.screens.camera
 
 import android.app.Activity
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -28,6 +30,8 @@ import androidx.core.content.ContextCompat
 import com.project.projectmap.R
 import com.project.projectmap.ui.theme.ProjectmapTheme
 import kotlinx.coroutines.launch
+import java.nio.ByteBuffer
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 class CameraActivity : ComponentActivity() {
@@ -42,6 +46,7 @@ class CameraActivity : ComponentActivity() {
                 0
             )
         }
+
         setContent {
             ProjectmapTheme {
                 val bottomSheetState = rememberModalBottomSheetState(
@@ -50,9 +55,9 @@ class CameraActivity : ComponentActivity() {
                 val scope = rememberCoroutineScope()
                 val controller = remember {
                     LifecycleCameraController(applicationContext).apply {
+                        setCameraSelector(CameraSelector.DEFAULT_BACK_CAMERA)
                         setEnabledUseCases(
-                            CameraController.IMAGE_CAPTURE or
-                                    CameraController.IMAGE_ANALYSIS
+                            CameraController.IMAGE_CAPTURE // or combine multiple use cases with bitwise OR
                         )
                     }
                 }
@@ -124,6 +129,11 @@ class CameraActivity : ComponentActivity() {
                                     scope.launch {
                                         bottomSheetState.hide()
                                     }
+                                },
+                                onSubmitSuccess = {
+                                    // Setelah submit berhasil, set hasil dan selesaikan Activity
+                                    setResult(Activity.RESULT_OK)
+                                    finish()
                                 }
                             )
                         }
@@ -153,6 +163,15 @@ class CameraActivity : ComponentActivity() {
             }
         )
     }
+
+
+    fun ImageProxy.toBitmap(): Bitmap {
+        val buffer: ByteBuffer = planes[0].buffer
+        val bytes = ByteArray(buffer.remaining())
+        buffer.get(bytes)
+        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+    }
+
 
     private fun hasCameraPermission(): Boolean {
         return cameraXPermission.all {

@@ -85,6 +85,8 @@ dependencies {
     implementation (libs.play.services.auth)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.firebase.firestore.ktx)
+
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -107,6 +109,8 @@ dependencies {
         implementation(libs.androidx.camera.extensions)
         implementation (libs.kotlinx.coroutines.play.services)
         implementation (libs.play.services.base)
+
+        implementation (libs.play.services.auth.v2010)
 
         // Compose dependencies
         implementation (libs.ui)
