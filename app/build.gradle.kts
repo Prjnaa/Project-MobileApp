@@ -118,5 +118,7 @@ dependencies {
         // Other dependencies
         implementation (libs.firebase.auth.ktx)
         implementation (libs.firebase.firestore.ktx.v2481)
+        implementation ("androidx.compose.material3:material3:1.3.1")
+
     }
 }
