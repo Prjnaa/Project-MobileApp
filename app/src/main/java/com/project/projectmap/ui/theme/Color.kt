@@ -11,7 +11,7 @@ val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
 
 object LightColors {
-    val Primary = Color(0xFF9747FF)
+    val Primary = Color(0xFF915DD9)
     val OnPrimary = Color(0xFFFFFFFF)
     val PrimaryContainer = Color(0xFFEADDFF)
     val OnPrimaryContainer = Color(0xFF21005E)

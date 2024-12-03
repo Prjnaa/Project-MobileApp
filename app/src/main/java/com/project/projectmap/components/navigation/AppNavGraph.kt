@@ -10,14 +10,14 @@ import com.project.projectmap.ui.screens.auth.login.LoginScreen
 import com.project.projectmap.ui.screens.auth.register.RegisterScreen
 import com.project.projectmap.ui.screens.badges.BadgesPage
 import com.project.projectmap.ui.screens.calendarPage.CalendarPage
-import com.project.projectmap.ui.screens.main.CalorieTrackerScreen
+import com.project.projectmap.ui.screens.main.MainTrackerScreen
 import com.project.projectmap.ui.screens.main.NewTargetScreen
 import com.project.projectmap.ui.screens.profilePage.ProfileScreen
 
 object AppDestinations {
     const val LOGIN_ROUTE = "login"
     const val REGISTER_ROUTE = "register"
-    const val CALORIE_TRACKER_ROUTE = "calorie_tracker"
+    const val MAIN_ROUTE = "main_tracker"
     const val CALENDAR_ROUTE = "calendar"
     const val BADGES_ROUTE = "badges"
     const val PROFILE_ROUTE = "profile"
@@ -27,54 +27,66 @@ object AppDestinations {
 @Composable
 fun AppNavGraph(
     navController: NavHostController = rememberNavController(),
-    startDestination: String = AppDestinations.LOGIN_ROUTE
 ) {
+    val isLoggedIn = FirebaseAuth.getInstance().currentUser != null
+
+    val startDestination = if (isLoggedIn) {
+        AppDestinations.MAIN_ROUTE
+    } else {
+        AppDestinations.MAIN_ROUTE
+    }
+
     NavHost(
         navController = navController,
         startDestination = startDestination
     ) {
+
+//        ROUTE FOR LOGIN PAGE
         composable(AppDestinations.LOGIN_ROUTE) {
             LoginScreen(
                 onLoginSuccess = { isNewUser ->
                     if (isNewUser) {
-                        // If new user, navigate to set target first
                         navController.navigate(AppDestinations.NEW_TARGET_ROUTE) {
                             popUpTo(AppDestinations.LOGIN_ROUTE) { inclusive = true }
                         }
                     } else {
-                        // If existing user, go directly to calorie tracker
-                        navController.navigate(AppDestinations.CALORIE_TRACKER_ROUTE) {
+                        navController.navigate(AppDestinations.MAIN_ROUTE) {
                             popUpTo(AppDestinations.LOGIN_ROUTE) { inclusive = true }
                         }
                     }
                 },
-                onRegisterClick = {
-                    navController.navigate(AppDestinations.REGISTER_ROUTE)
+                onNavigateToRegister = {
+                    navController.navigate(AppDestinations.REGISTER_ROUTE) {
+                        popUpTo(AppDestinations.LOGIN_ROUTE) { inclusive = true }
+                    }
                 }
             )
         }
 
+//        ROUTE FOR REGISTER PAGE
         composable(AppDestinations.REGISTER_ROUTE) {
             RegisterScreen(
                 onRegisterSuccess = {
-                    // After registration, navigate to set target
                     navController.navigate(AppDestinations.NEW_TARGET_ROUTE) {
                         popUpTo(AppDestinations.REGISTER_ROUTE) { inclusive = true }
                     }
                 },
                 onNavigateToLogin = {
-                    navController.popBackStack()
+                    navController.navigate(AppDestinations.LOGIN_ROUTE) {
+                        popUpTo(AppDestinations.REGISTER_ROUTE) { inclusive = true }
+                    }
                 }
             )
         }
 
+//        ROUTE FOR NEW TARGET PAGE
         composable(AppDestinations.NEW_TARGET_ROUTE) {
             NewTargetScreen(
                 onClose = {
                     // On close, check if user has target set
                     val currentUser = FirebaseAuth.getInstance().currentUser
                     if (currentUser != null) {
-                        navController.navigate(AppDestinations.CALORIE_TRACKER_ROUTE) {
+                        navController.navigate(AppDestinations.MAIN_ROUTE) {
                             popUpTo(AppDestinations.NEW_TARGET_ROUTE) { inclusive = true }
                         }
                     } else {
@@ -85,15 +97,16 @@ fun AppNavGraph(
                     }
                 },
                 onContinue = {
-                    navController.navigate(AppDestinations.CALORIE_TRACKER_ROUTE) {
+                    navController.navigate(AppDestinations.MAIN_ROUTE) {
                         popUpTo(AppDestinations.NEW_TARGET_ROUTE) { inclusive = true }
                     }
                 }
             )
         }
 
-        composable(AppDestinations.CALORIE_TRACKER_ROUTE) {
-            CalorieTrackerScreen(
+//        ROUTE FOR MAIN PAGE
+        composable(AppDestinations.MAIN_ROUTE) {
+            MainTrackerScreen(
                 onNavigateToCalendar = {
                     navController.navigate(AppDestinations.CALENDAR_ROUTE)
                 },
@@ -109,6 +122,7 @@ fun AppNavGraph(
             )
         }
 
+//        ROUTE FOR BADGES PAGE
         composable(AppDestinations.BADGES_ROUTE) {
             BadgesPage(
                 onClose = {
@@ -117,6 +131,7 @@ fun AppNavGraph(
             )
         }
 
+//        ROUTE FOR CALENDAR PAGE
         composable(AppDestinations.CALENDAR_ROUTE) {
             CalendarPage(
                 onClose = {
@@ -125,6 +140,7 @@ fun AppNavGraph(
             )
         }
 
+//        ROUTE FOR PROFILE PAGE
         composable(AppDestinations.PROFILE_ROUTE) {
             ProfileScreen(
                 onClose = {

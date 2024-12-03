@@ -10,7 +10,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.google.firebase.FirebaseApp
 import com.project.projectmap.components.navigation.AppNavGraph
-import com.project.projectmap.ui.screens.main.CalorieTrackerScreen
+import com.project.projectmap.ui.screens.auth.login.LoginScreen
+import com.project.projectmap.ui.screens.main.MainTrackerScreen
 import com.project.projectmap.ui.theme.ProjectmapTheme
 
 class MainActivity : ComponentActivity() {
@@ -19,13 +20,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         FirebaseApp.initializeApp(this)
         setContent {
-            CalorieTrackerScreen()
             ProjectmapTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-//                   AppNavGraph()
+                    AppNavGraph()
+//                    LoginScreen()
+//                    MainTrackerScreen()
                 }
             }
         }
