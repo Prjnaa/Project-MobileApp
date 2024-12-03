@@ -45,6 +45,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.project.projectmap.R
+import com.project.projectmap.components.msc.Constants
 import com.project.projectmap.firebase.model.CalorieTrackerViewModel
 import com.project.projectmap.ui.theme.ProjectmapTheme
 import kotlin.random.Random
@@ -130,7 +131,7 @@ fun TopBar(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp),
+            .height(54.dp),
         color = MaterialTheme.colorScheme.primary,
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -475,7 +476,7 @@ fun ChallengeItem(
         modifier = Modifier
             .fillMaxWidth(),  // Ensure it fills the width
         color = MaterialTheme.colorScheme.primary,
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(Constants.ROUNDED_CORNER_VAL)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),  // Add padding to the Row

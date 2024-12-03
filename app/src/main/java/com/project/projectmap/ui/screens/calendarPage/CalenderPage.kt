@@ -95,7 +95,7 @@ fun CalendarPage(onClose: () -> Unit) {
                 onClick = onClose,
                 modifier = Modifier.align(Alignment.TopEnd)
             ) {
-                Icon(Icons.Default.Close, contentDescription = "Close")
+                Icon(Icons.Default.Close, contentDescription = "Close", modifier = Modifier.size(24.dp))
             }
         }
 
@@ -137,7 +137,7 @@ fun CalendarPage(onClose: () -> Unit) {
                     text = day,
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onTertiary.copy(alpha = 0.75f),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.75f),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -184,7 +184,7 @@ fun CalendarPage(onClose: () -> Unit) {
                                     color = when {
                                         isSelected -> MaterialTheme.colorScheme.onPrimary
                                         date > LocalDate.now() -> MaterialTheme.colorScheme.tertiary
-                                        else -> Color.Black
+                                        else -> MaterialTheme.colorScheme.onBackground
                                     },
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Medium
