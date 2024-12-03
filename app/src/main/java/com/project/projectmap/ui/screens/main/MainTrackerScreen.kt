@@ -46,7 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.project.projectmap.R
 import com.project.projectmap.components.msc.Constants
-import com.project.projectmap.firebase.model.CalorieTrackerViewModel
+import com.project.projectmap.ui.viewModel.CalorieTrackerViewModel
 import com.project.projectmap.ui.theme.ProjectmapTheme
 import kotlin.random.Random
 
