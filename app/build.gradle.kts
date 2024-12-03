@@ -17,7 +17,7 @@ if (secretPropertiesFile.exists()) {
 
 android {
     namespace = "com.project.projectmap"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.project.projectmap"
@@ -68,8 +68,6 @@ android {
     }
 }
 
-
-
 dependencies {
 
     implementation(libs.androidx.core.ktx)
@@ -79,13 +77,12 @@ dependencies {
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
+    implementation(libs.androidx.material3.v110)
     implementation(libs.firebase.auth)
-    implementation (platform(libs.firebase.bom))
-    implementation (libs.play.services.auth)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.play.services.auth)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.firebase.firestore.ktx)
-
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -95,32 +92,25 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    dependencies {
-        // The following line is optional, as the core library is included indirectly by camera-camera2
-        implementation(libs.androidx.camera.core)
-        implementation(libs.androidx.camera.camera2)
-        // If you want to additionally use the CameraX Lifecycle library
-        implementation(libs.androidx.camera.lifecycle)
-        // If you want to additionally use the CameraX View class
-        implementation(libs.androidx.camera.view)
-        // If you want to additionally add CameraX ML Kit Vision Integration
-        implementation(libs.androidx.camera.mlkit.vision)
-        // If you want to additionally use the CameraX Extensions library
-        implementation(libs.androidx.camera.extensions)
-        implementation (libs.kotlinx.coroutines.play.services)
-        implementation (libs.play.services.base)
+    // CameraX Dependencies
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
+    implementation(libs.androidx.camera.mlkit.vision)
+    implementation(libs.androidx.camera.extensions)
+    implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.play.services.base)
+    implementation(libs.play.services.auth.v2010)
 
-        implementation (libs.play.services.auth.v2010)
+    implementation(libs.litert)
+    implementation(libs.litert.gpu)
+    implementation(libs.litert.support)
+    implementation(libs.litert.metadata)
+    implementation(libs.litert.gpu.api)
+    implementation(libs.litert.support.api)
 
-        // Compose dependencies
-        implementation (libs.ui)
-        implementation (libs.ui.tooling.preview)
-        implementation (libs.androidx.lifecycle.runtime.ktx.v261)
-        implementation (libs.androidx.activity.compose.v172)
-        implementation (libs.material3)
-
-        // Other dependencies
-        implementation (libs.firebase.auth.ktx)
-        implementation (libs.firebase.firestore.ktx.v2481)
-    }
+    // Firebase dependencies
+    implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.firestore.ktx.v2481)
 }

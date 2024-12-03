@@ -1,5 +1,6 @@
 package com.project.projectmap.ui.screens.camera
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -20,19 +21,21 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PhotoBottomSheetContent(
+    foodName: String,
     onDismiss: () -> Unit = {},
     onSubmitSuccess: () -> Unit = {}
 ) {
+    Log.d("PhotoBottomSheet", "Received foodName: $foodName") // Log penerimaan nama makanan
+
     var fat by remember { mutableStateOf(1.9f) }
     var carbohydrate by remember { mutableStateOf(5.8f) }
     var protein by remember { mutableStateOf(4.1f) }
-    var foodName by remember { mutableStateOf("Milk") }
+    var foodNameState by remember { mutableStateOf(foodName) }
 
     val calories = remember(fat, carbohydrate, protein) {
         String.format("%.1f", (protein * 4) + (carbohydrate * 4) + (fat * 9))
@@ -49,10 +52,12 @@ fun PhotoBottomSheetContent(
             .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
             .padding(16.dp)
     ) {
-        // Editable Food Name
         TextField(
-            value = foodName,
-            onValueChange = { foodName = it },
+            value = foodNameState,
+            onValueChange = {
+                foodNameState = it
+                Log.d("PhotoBottomSheet", "Updated foodNameState: $it") // Log perubahan nama makanan
+            },
             singleLine = true,
             textStyle = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold),
             modifier = Modifier
@@ -67,7 +72,6 @@ fun PhotoBottomSheetContent(
         )
 
         Text(text = "Calories")
-
         Text(
             text = "$calories Cals",
             fontSize = 36.sp,
@@ -85,12 +89,18 @@ fun PhotoBottomSheetContent(
         Button(
             onClick = {
                 currentUser?.let { user ->
-                    // Get current date
-                    val currentDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(
-                        Date()
-                    )
+                    if (foodNameState.isBlank()) {
+                        Toast.makeText(context, "Food name cannot be empty!", Toast.LENGTH_SHORT).show()
+                        return@let
+                    }
 
-                    // Create nutrition entry
+                    // Pastikan nilai nutrisi valid
+                    if (fat < 0 || carbohydrate < 0 || protein < 0) {
+                        Toast.makeText(context, "Nutrient values cannot be negative!", Toast.LENGTH_SHORT).show()
+                        return@let
+                    }
+
+                    val currentDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
                     val nutritionEntry = hashMapOf(
                         "userId" to user.uid,
                         "date" to currentDate,
@@ -98,21 +108,21 @@ fun PhotoBottomSheetContent(
                         "protein" to protein,
                         "carbohydrate" to carbohydrate,
                         "calories" to calories.toFloat(),
-                        "foodName" to foodName,
+                        "foodName" to foodNameState,
                         "timestamp" to FieldValue.serverTimestamp()
                     )
 
-                    // Add to daily entries collection
                     db.collection("dailyNutrition")
                         .add(nutritionEntry)
                         .addOnSuccessListener {
                             Toast.makeText(context, "Nutrition tracked successfully!", Toast.LENGTH_SHORT).show()
-                            // Panggil callback submit success
                             onSubmitSuccess()
                         }
                         .addOnFailureListener { e ->
                             Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                         }
+                } ?: run {
+                    Toast.makeText(context, "User not logged in!", Toast.LENGTH_SHORT).show()
                 }
             },
             modifier = Modifier
@@ -128,26 +138,16 @@ fun PhotoBottomSheetContent(
 @Composable
 fun EditableNutrientInfo(name: String, amount: Float, onValueChange: (Float) -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = name,
-            fontSize = 16.sp,
-            color = Color.Gray
-        )
+        Text(text = name, fontSize = 16.sp, color = Color.Gray)
         TextField(
             value = amount.toString(),
             onValueChange = {
-                // Gantilah koma dengan titik dan pastikan bahwa input valid sebagai angka desimal
                 val sanitizedInput = it.replace(",", ".")
-
-                // Cek apakah input valid (angka desimal) dan ubah ke Float
                 val parsedValue = try {
                     sanitizedInput.toFloat()
                 } catch (e: NumberFormatException) {
-                    // Jika parsing gagal, fallback ke 0f
                     0f
                 }
-
-                // Update nilai setelah parsing berhasil
                 onValueChange(parsedValue)
             },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -163,4 +163,3 @@ fun EditableNutrientInfo(name: String, amount: Float, onValueChange: (Float) -> 
         )
     }
 }
-

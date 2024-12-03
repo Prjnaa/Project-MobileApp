@@ -1,3 +1,4 @@
+// CameraPreview.kt
 package com.project.projectmap.ui.screens.camera
 
 import androidx.camera.view.LifecycleCameraController
@@ -19,6 +20,6 @@ fun CameraPreview(
             controller.bindToLifecycle(lifecycleOwner)
         }
     },
-    modifier = modifier
+        modifier = modifier
     )
 }
