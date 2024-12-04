@@ -45,7 +45,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.project.projectmap.R
-import com.project.projectmap.firebase.model.CalorieTrackerViewModel
+import com.project.projectmap.components.msc.Constants
+import com.project.projectmap.ui.viewModel.CalorieTrackerViewModel
 import com.project.projectmap.ui.theme.ProjectmapTheme
 import kotlin.random.Random
 
@@ -87,7 +88,10 @@ fun MainTrackerScreen(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(32.dp)
     ) {
-        TopBar()
+        TopBar(
+            onNavToBadges = onNavigateToBadges,
+            onNavToProfile = onNavigateToProfile,
+        )
         if (isLoading) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
         } else if (errorMessage != null) {
@@ -120,11 +124,14 @@ fun MainTrackerScreen(
 }
 
 @Composable
-fun TopBar(modifier: Modifier = Modifier) {
+fun TopBar(
+    onNavToBadges: () -> Unit = {},
+    onNavToProfile: () -> Unit = {}
+) {
     Surface(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp),
+            .height(54.dp),
         color = MaterialTheme.colorScheme.primary,
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -135,9 +142,14 @@ fun TopBar(modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
+//            NAVIGATE TO PROFILE BUTTON
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .clickable {
+                        onNavToProfile()
+                    }
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.baseline_person_24),
@@ -158,31 +170,24 @@ fun TopBar(modifier: Modifier = Modifier) {
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Button(
-                    onClick = { /* TODO: Handle Button 1 click */ },
-                    modifier = Modifier
-                        .height(40.dp),
-                    contentPadding = PaddingValues(2.dp),
-                    shape = RoundedCornerShape(16.dp)
 
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.streak_icon_24),
-                            contentDescription = "Streak Icon",
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(30.dp)
-                        )
-                        Text(
-                            text = "200",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+                    Icon(
+                        painter = painterResource(id = R.drawable.streak_icon_24),
+                        contentDescription = "Streak Icon",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(30.dp)
+                    )
+                    Text(
+                        text = "200",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
+
 
                 VerticalDivider(
                     thickness = 2.dp,
@@ -190,29 +195,26 @@ fun TopBar(modifier: Modifier = Modifier) {
                     modifier = Modifier.padding(vertical = 10.dp)
                 )
 
-                Button(
-                    onClick = { /* TODO: Handle Button 2 click */ },
-                    modifier = Modifier.height(40.dp),
-                    contentPadding = PaddingValues(2.dp),
-                    shape = RoundedCornerShape(16.dp)
+//                NAVIGATE TO BADGES BUTTON
+                Row(
+                    modifier = Modifier.clickable { onNavToBadges() },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.Start)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.Start)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.coin_24),
-                            contentDescription = "Streak Icon",
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(28.dp)
-                        )
-                        Text(
-                            text = "1200",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+                    Icon(
+                        painter = painterResource(id = R.drawable.coin_24),
+                        contentDescription = "Streak Icon",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Text(
+                        text = "1200",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
+
+
             }
         }
     }
@@ -474,7 +476,7 @@ fun ChallengeItem(
         modifier = Modifier
             .fillMaxWidth(),  // Ensure it fills the width
         color = MaterialTheme.colorScheme.primary,
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(Constants.ROUNDED_CORNER_VAL)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),  // Add padding to the Row

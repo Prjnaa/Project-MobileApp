@@ -31,9 +31,9 @@ fun AppNavGraph(
     val isLoggedIn = FirebaseAuth.getInstance().currentUser != null
 
     val startDestination = if (isLoggedIn) {
-        AppDestinations.MAIN_ROUTE
+        AppDestinations.REGISTER_ROUTE
     } else {
-        AppDestinations.MAIN_ROUTE
+        AppDestinations.REGISTER_ROUTE
     }
 
     NavHost(

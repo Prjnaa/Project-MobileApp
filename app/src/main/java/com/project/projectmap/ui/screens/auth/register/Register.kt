@@ -34,7 +34,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.project.projectmap.module.getCurrentDate
+import com.project.projectmap.module.saveDailyIntake
 import com.project.projectmap.components.msc.PasswordInput
+import com.project.projectmap.firebase.model.Profile
+import com.project.projectmap.module.saveUserProfile
+import com.project.projectmap.firebase.model.DailyIntake
 
 @Composable
 fun RegisterScreen(
@@ -132,44 +137,49 @@ fun RegisterScreen(
                         auth.createUserWithEmailAndPassword(email, password)
                             .addOnCompleteListener { task ->
                                 if (task.isSuccessful) {
-                                    val currentUser = auth.currentUser
-                                    currentUser?.let { user ->
-                                        // Create user profile in Firestore
-                                        val userProfile = hashMapOf(
-                                            "uid" to user.uid,
-                                            "username" to username,
-                                            "email" to email,
-                                            "initialTarget" to false
+                                    val userId = auth.currentUser?.uid
+
+                                    if (userId != null) {
+                                        val profile = Profile(
+                                            name = username,
+                                            email = email,
+                                            calorieTarget = 0,
+                                            proteinTarget = 0,
+                                            fatTarget = 0,
+                                            carbsTarget = 0
                                         )
 
-                                        db.collection("users")
-                                            .document(user.uid)
-                                            .set(userProfile)
-                                            .addOnSuccessListener {
-                                                // Update user profile with display name
-                                                val profileUpdates =
-                                                    com.google.firebase.auth.UserProfileChangeRequest.Builder()
-                                                        .setDisplayName(username)
-                                                        .build()
+                                        saveUserProfile(
+                                            userId,
+                                            profile,
+                                            db,
+                                            onComplete = { success ->
+                                                if (success) {
+                                                    val currentDate = getCurrentDate()
+                                                    val initialDailyIntake = DailyIntake()
 
-                                                user.updateProfile(profileUpdates)
-                                                    .addOnCompleteListener { profileTask ->
-                                                        isLoading = false
-                                                        if (profileTask.isSuccessful) {
-                                                            onRegisterSuccess()
-                                                        } else {
-                                                            errorMessage =
-                                                                profileTask.exception?.message
-                                                                    ?: "Profile update failed"
+                                                    saveDailyIntake(
+                                                        userId,
+                                                        currentDate,
+                                                        initialDailyIntake,
+                                                        db,
+                                                        onComplete = { success ->
+                                                            if (success) {
+                                                                onRegisterSuccess()
+                                                            }
                                                         }
-                                                    }
+                                                    )
+
+                                                } else {
+                                                    isLoading = false
+                                                }
+                                            },
+                                            errorMessage = { error ->
+                                                errorMessage = error
                                             }
-                                            .addOnFailureListener { e ->
-                                                isLoading = false
-                                                errorMessage =
-                                                    "Error saving user profile: ${e.message}"
-                                            }
+                                        )
                                     }
+
                                 } else {
                                     isLoading = false
                                     errorMessage = task.exception?.message ?: "Registration failed"
@@ -242,3 +252,4 @@ private fun isValidEmail(email: String): Boolean {
     val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$"
     return email.matches(emailRegex.toRegex())
 }
+

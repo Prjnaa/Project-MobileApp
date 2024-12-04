@@ -1,4 +1,4 @@
-package com.project.projectmap.firebase.model
+package com.project.projectmap.ui.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
