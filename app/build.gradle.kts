@@ -1,7 +1,18 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.google.gms.google.services)
+}
+
+val secretPropertiesFile = rootProject.file("secrets.properties")
+val secretProperties = Properties()
+if (secretPropertiesFile.exists()) {
+    secretProperties.load(FileInputStream(secretPropertiesFile))
+} else {
+    secretProperties["GOOGLE_API_TOKEN"] = "\"default-token\""
 }
 
 android {
@@ -14,6 +25,12 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+
+        buildConfigField(
+            "String",
+            "GOOGLE_API_TOKEN",
+            secretProperties["GOOGLE_API_TOKEN"] as String
+        )
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -38,6 +55,7 @@ android {
         jvmTarget = "1.8"
     }
     buildFeatures {
+        buildConfig = true
         compose = true
     }
     composeOptions {
@@ -53,38 +71,51 @@ android {
 
 
 dependencies {
-
+    // Core AndroidX dependencies
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.lifecycle.runtime.ktx.v261)
+
+    // Jetpack Compose dependencies
     implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.ui)
+    implementation(libs.ui.tooling.preview)
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation(libs.firebase.auth)
-    implementation (platform(libs.firebase.bom))
-    implementation (libs.play.services.auth)
-    implementation(libs.androidx.navigation.compose)
+    implementation("androidx.compose.material3:material3:1.3.1")
+
+    // Debugging and Testing
+    debugImplementation(libs.androidx.ui.tooling)
+    debugImplementation(libs.androidx.ui.test.manifest)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
 
-    dependencies {
-        // The following line is optional, as the core library is included indirectly by camera-camera2
-        implementation(libs.androidx.camera.core)
-        implementation(libs.androidx.camera.camera2)
-        // If you want to additionally use the CameraX Lifecycle library
-        implementation(libs.androidx.camera.lifecycle)
-        // If you want to additionally use the CameraX View class
-        implementation(libs.androidx.camera.view)
-        // If you want to additionally add CameraX ML Kit Vision Integration
-        implementation(libs.androidx.camera.mlkit.vision)
-        // If you want to additionally use the CameraX Extensions library
-        implementation(libs.androidx.camera.extensions)
-    }
+    // Firebase dependencies
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.firestore.ktx)
+    implementation(libs.firebase.firestore.ktx.v2481)
+
+    // Google Play Services
+    implementation(libs.play.services.auth)
+    implementation(libs.play.services.base)
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation(libs.kotlinx.coroutines.play.services)
+
+    // Navigation
+    implementation(libs.androidx.navigation.compose)
+
+    // CameraX dependencies
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
+    implementation(libs.androidx.camera.mlkit.vision)
+    implementation(libs.androidx.camera.extensions)
 }
