@@ -119,7 +119,7 @@ fun BadgesPage(
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.bunny),
+                    painter = painterResource(id = R.drawable.char_bunny),
                     contentDescription = "Bunny with carrot",
                     modifier = Modifier.size(200.dp)
                 )

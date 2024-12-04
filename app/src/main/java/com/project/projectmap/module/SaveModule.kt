@@ -4,10 +4,12 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.project.projectmap.firebase.model.DailyIntake
 import com.project.projectmap.firebase.model.Profile
 import com.project.projectmap.firebase.model.User
+import com.project.projectmap.firebase.model.UserTargets
 
 fun saveUserProfile(
     userId: String,
     profile: Profile,
+    targets: UserTargets,
     db: FirebaseFirestore,
     onComplete: (Boolean) -> Unit,
     errorMessage: (String) -> Unit
@@ -17,6 +19,7 @@ fun saveUserProfile(
 
     val user = User(
         profile = profile,
+        targets = targets
     )
 
     userRef.set(user).addOnCompleteListener { task ->

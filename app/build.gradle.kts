@@ -123,4 +123,14 @@ dependencies {
     implementation(libs.androidx.camera.view)
     implementation(libs.androidx.camera.mlkit.vision)
     implementation(libs.androidx.camera.extensions)
-}
+
+    // AR
+    implementation("com.google.ar:core:1.15.0") {
+        exclude(group = "com.android.support", module = "support-compat")
+    }
+    implementation("com.google.ar.sceneform.ux:sceneform-ux:1.15.0") {
+        exclude(group = "com.android.support", module = "support-compat")
+    }
+    implementation("com.google.ar.sceneform:core:1.15.0") {
+        exclude(group = "com.android.support", module = "support-compat")
+    }}

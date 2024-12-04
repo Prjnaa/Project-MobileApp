@@ -9,10 +9,10 @@ import com.google.firebase.auth.FirebaseAuth
 import com.project.projectmap.ui.screens.auth.login.LoginScreen
 import com.project.projectmap.ui.screens.auth.register.RegisterScreen
 import com.project.projectmap.ui.screens.badges.BadgesPage
-import com.project.projectmap.ui.screens.calendarPage.CalendarPage
+import com.project.projectmap.ui.screens.calendar.CalendarPage
 import com.project.projectmap.ui.screens.main.MainTrackerScreen
-import com.project.projectmap.ui.screens.main.NewTargetScreen
-import com.project.projectmap.ui.screens.profilePage.ProfileScreen
+import com.project.projectmap.ui.screens.main.SetTargetScreen
+import com.project.projectmap.ui.screens.profile.ProfileScreen
 
 object AppDestinations {
     const val LOGIN_ROUTE = "login"
@@ -31,9 +31,9 @@ fun AppNavGraph(
     val isLoggedIn = FirebaseAuth.getInstance().currentUser != null
 
     val startDestination = if (isLoggedIn) {
-        AppDestinations.REGISTER_ROUTE
+        AppDestinations.MAIN_ROUTE
     } else {
-        AppDestinations.REGISTER_ROUTE
+        AppDestinations.LOGIN_ROUTE
     }
 
     NavHost(
@@ -81,7 +81,7 @@ fun AppNavGraph(
 
 //        ROUTE FOR NEW TARGET PAGE
         composable(AppDestinations.NEW_TARGET_ROUTE) {
-            NewTargetScreen(
+            SetTargetScreen(
                 onClose = {
                     // On close, check if user has target set
                     val currentUser = FirebaseAuth.getInstance().currentUser

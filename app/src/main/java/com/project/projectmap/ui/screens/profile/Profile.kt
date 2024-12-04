@@ -1,4 +1,4 @@
-package com.project.projectmap.ui.screens.profilePage
+package com.project.projectmap.ui.screens.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

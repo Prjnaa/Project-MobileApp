@@ -1,4 +1,4 @@
-package com.project.projectmap.ui.screens.calendarPage
+package com.project.projectmap.ui.screens.calendar
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

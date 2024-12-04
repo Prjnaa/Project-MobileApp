@@ -33,6 +33,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.userProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
 import com.project.projectmap.module.getCurrentDate
 import com.project.projectmap.module.saveDailyIntake
@@ -40,6 +41,8 @@ import com.project.projectmap.components.msc.PasswordInput
 import com.project.projectmap.firebase.model.Profile
 import com.project.projectmap.module.saveUserProfile
 import com.project.projectmap.firebase.model.DailyIntake
+import com.project.projectmap.firebase.model.User
+import com.project.projectmap.firebase.model.UserTargets
 
 @Composable
 fun RegisterScreen(
@@ -134,25 +137,36 @@ fun RegisterScreen(
                         errorMessage = "Passwords do not match"
                     } else {
                         isLoading = true
-                        auth.createUserWithEmailAndPassword(email, password)
+                        auth.createUserWithEmailAndPassword(email, password, )
                             .addOnCompleteListener { task ->
                                 if (task.isSuccessful) {
-                                    val userId = auth.currentUser?.uid
+                                    val currentUser = auth.currentUser
+                                    val userId = currentUser?.uid
+
+                                    val displayNameUpdate = userProfileChangeRequest {
+                                        displayName = username
+                                    }
 
                                     if (userId != null) {
                                         val profile = Profile(
                                             name = username,
                                             email = email,
-                                            calorieTarget = 0,
-                                            proteinTarget = 0,
-                                            fatTarget = 0,
-                                            carbsTarget = 0
                                         )
 
+                                        val targets = UserTargets(
+                                            calorieTarget = 0f,
+                                            proteinTarget = 0f,
+                                            fatTarget = 0f,
+                                            carbsTarget = 0f
+                                        )
+
+                                        currentUser?.updateProfile(displayNameUpdate)
+
                                         saveUserProfile(
-                                            userId,
-                                            profile,
-                                            db,
+                                            userId = userId,
+                                            profile = profile,
+                                            targets = targets,
+                                            db = db,
                                             onComplete = { success ->
                                                 if (success) {
                                                     val currentDate = getCurrentDate()

@@ -1,30 +1,34 @@
 package com.project.projectmap.firebase.model
 
 data class User(
-    val profile: Profile = Profile()
+    val profile: Profile = Profile(),
+    val targets: UserTargets = UserTargets()
 )
 
 data class Profile(
     val name: String = "",
     val email: String = "",
-    val calorieTarget: Int = 0,
-    val proteinTarget: Int = 0,
-    val fatTarget: Int = 0,
-    val carbsTarget: Int = 0
+)
+
+data class UserTargets(
+    val calorieTarget: Float = 0f,
+    val proteinTarget: Float = 0f,
+    val fatTarget: Float = 0f,
+    val carbsTarget: Float = 0f
 )
 
 data class DailyIntake(
-    val totalCalories: Int = 0,
-    val totalProtein: Int = 0,
-    val totalFat: Int = 0,
-    val totalCarbs: Int = 0,
+    val totalCalories: Float = 0f,
+    val totalProtein: Float = 0f,
+    val totalFat: Float = 0f,
+    val totalCarbs: Float = 0f,
     val items: Map<String, FoodItem> = emptyMap()
 )
 
 data class FoodItem(
     val name: String = "",
-    val calories: Int = 0,
-    val protein: Int = 0,
-    val fat: Int = 0,
-    val carbs: Int = 0
+    val calories: Float = 0f,
+    val protein: Float = 0f,
+    val fat: Float = 0f,
+    val carbs: Float = 0f
 )

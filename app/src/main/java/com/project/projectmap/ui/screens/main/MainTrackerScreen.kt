@@ -1,8 +1,11 @@
 package com.project.projectmap.ui.screens.main
 
+import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,6 +38,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
@@ -44,10 +48,19 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.fragment.app.FragmentActivity
+import com.google.ar.sceneform.AnchorNode
+import com.google.ar.sceneform.ArSceneView
+import com.google.ar.sceneform.rendering.ModelRenderable
+import com.google.ar.sceneform.ux.ArFragment
+import com.google.ar.sceneform.ux.TransformableNode
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.project.projectmap.R
 import com.project.projectmap.components.msc.Constants
-import com.project.projectmap.ui.viewModel.CalorieTrackerViewModel
 import com.project.projectmap.ui.theme.ProjectmapTheme
+import com.project.projectmap.ui.viewModel.CalorieTrackerViewModel
 import kotlin.random.Random
 
 @Composable
@@ -75,10 +88,13 @@ fun MainTrackerScreen(
     onNavigateToNewTarget: () -> Unit = {},
     viewModel: CalorieTrackerViewModel = CalorieTrackerViewModel()
 ) {
-    val nutritionData by viewModel.nutritionData.collectAsState()
-    val nutritionTarget by viewModel.nutritionTarget.collectAsState()
+    val user by viewModel.user.collectAsState()
+    val intake by viewModel.dailyIntake.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val db = FirebaseFirestore.getInstance()
 
     Column(
         modifier = Modifier
@@ -86,12 +102,16 @@ fun MainTrackerScreen(
             .background(color = MaterialTheme.colorScheme.background)
             .padding(start = 16.dp, top = 54.dp, end = 16.dp, bottom = 0.dp)
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(32.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        TopBar(
-            onNavToBadges = onNavigateToBadges,
-            onNavToProfile = onNavigateToProfile,
-        )
+
+        user?.let { userInfo ->
+            TopBar(
+                onNavToBadges = onNavigateToBadges,
+                onNavToProfile = onNavigateToProfile,
+                userName = userInfo.profile.name
+            )
+        }
         if (isLoading) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
         } else if (errorMessage != null) {
@@ -101,17 +121,21 @@ fun MainTrackerScreen(
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         } else {
-            nutritionData?.let { data ->
+            intake?.let { data ->
                 CurrentStats(
-                    carbsProgress = data.currentCarbs,
-                    proteinProgress = data.currentProtein,
-                    fatProgress = data.currentFat
+                    carbsProgress = data.totalCarbs,
+                    proteinProgress = data.totalProtein,
+                    fatProgress = data.totalFat,
+                    carbsTarget = user.targets?.carbsTarget ?: 0f,
+                    proteinTarget = user.targets?.proteinTarget ?: 0f,
+                    fatTarget = user.targets?.fatTarget ?: 0f
                 )
             }
-            nutritionTarget?.let { targetData ->
+            user.targets?.let { targetData ->
                 Tracker(
-                    currentCalories = nutritionData.currentCalories,
-                    targetCalories = targetData.totalCalories
+                    currentCalories = intake?.totalCalories?.toInt() ?: 0,
+                    targetCalories = targetData.calorieTarget.toInt(),
+                    onNavToNewTarget = onNavigateToNewTarget
                 )
 
             }
@@ -126,7 +150,8 @@ fun MainTrackerScreen(
 @Composable
 fun TopBar(
     onNavToBadges: () -> Unit = {},
-    onNavToProfile: () -> Unit = {}
+    onNavToProfile: () -> Unit = {},
+    userName: String = "user"
 ) {
     Surface(
         modifier = Modifier
@@ -158,7 +183,7 @@ fun TopBar(
                     modifier = Modifier.size(36.dp)
                 )
                 Text(
-                    text = "User Name",
+                    text = userName,
                     fontSize = 20.sp,
                     color = MaterialTheme.colorScheme.onPrimary,
                     fontWeight = FontWeight.Medium
@@ -187,7 +212,6 @@ fun TopBar(
                         fontWeight = FontWeight.Medium
                     )
                 }
-
 
                 VerticalDivider(
                     thickness = 2.dp,
@@ -225,39 +249,49 @@ fun TopBar(
 fun CurrentStats(
     carbsProgress: Float = 0.0f,
     proteinProgress: Float = 0.0f,
-    fatProgress: Float = 0.0f
+    fatProgress: Float = 0.0f,
+    carbsTarget: Float,
+    proteinTarget: Float,
+    fatTarget: Float
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 16.dp)
+            .border(width = 2.dp, color = MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(16.dp)),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        MacroItem(title = "Carbs", progress = carbsProgress)
-        MacroItem(title = "Protein", progress = proteinProgress)
-        MacroItem(title = "Fat", progress = fatProgress)
+        MacroItem(title = "Carbs", progress = carbsProgress, target = carbsTarget)
+        MacroItem(title = "Protein", progress = proteinProgress, target = proteinTarget)
+        MacroItem(title = "Fat", progress = fatProgress, target = fatTarget)
     }
 }
 
 
 @Composable
 fun Tracker(
-    currentCalories: Int = 999, targetCalories: Int = 9999
+    currentCalories: Int = 999, targetCalories: Int = 9999, onNavToNewTarget: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .border(width = 2.dp, color = MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(16.dp)),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-//        CHARACTER
         Image(
-            painter = painterResource(id = R.drawable.bunny),
-            contentDescription = "Tracker Illustration",
+            painter = painterResource(id = R.drawable.char_bunny),
+            contentDescription = "Calories Icon",
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 12.dp, bottom = 32.dp)
+                .scale(0.8f)
         )
+//        CHARACTER
+//        ArObjectViewer(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .padding(top = 12.dp, bottom = 32.dp),
+//            modelFilePath = "app/src/main/java/com/project/projectmap/assets/3d/bunny_blend.glb"
+//        )
 
 //        MAIN CALORIE TRACKER
         CalorieTracker(current = currentCalories, target = targetCalories)
@@ -266,7 +300,7 @@ fun Tracker(
         TrackEatButton()
 
 //        SET NEW TARGET
-        SetNewTargetLink()
+        SetNewTargetLink(onNavToNewTarget)
     }
 }
 
@@ -331,8 +365,8 @@ fun ChallengeList(
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 itemsIndexed(items) { index, item ->
-                    val random = (1..100).random() //Sample
-                    val isDone = Random.nextBoolean() //Sample
+                    val random = (1..100).random()
+                    val isDone = Random.nextBoolean()
                     ChallengeItem(index = index, text = item, isDone = isDone, coinCount = random)
                 }
             }
@@ -419,7 +453,9 @@ fun TrackEatButton() {
 
 //SET NEW TARGET LINK
 @Composable
-fun SetNewTargetLink() {
+fun SetNewTargetLink(
+    onNavToNewTarget: () -> Unit = {}
+) {
     Text(
         text = "Set New Target",
         fontSize = 16.sp,
@@ -429,15 +465,17 @@ fun SetNewTargetLink() {
         modifier = Modifier
             .padding(top = 16.dp)
             .offset(y = (-72).dp)
-            .clickable { /*TODO: Set New target link*/ }
+            .clickable { }
 
     )
 }
 
 //MACRO ITEM
 @Composable
-fun MacroItem(title: String, progress: Float) {
-    val constrainedProgress = progress.coerceIn(0f, 1f)
+fun MacroItem(title: String, progress: Float, target: Float) {
+    val constrainedProgress = progress / target
+    val surplus = if (progress > target) progress - target else 0f
+
     Column(
         verticalArrangement = Arrangement.spacedBy(4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -457,6 +495,19 @@ fun MacroItem(title: String, progress: Float) {
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
+        )
+        Text(
+            text = "+ $surplus g",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.tertiary.copy(if (surplus > 0) 1f else 0f),
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .background(
+                    color = MaterialTheme.colorScheme.onTertiary.copy(alpha = if (surplus > 0) 1f else 0f),
+                    shape = RoundedCornerShape(Constants.ROUNDED_CORNER_SM_VAL)
+                )
+                .padding(vertical = 2.dp, horizontal = 8.dp)
         )
     }
 }
@@ -479,9 +530,9 @@ fun ChallengeItem(
         shape = RoundedCornerShape(Constants.ROUNDED_CORNER_VAL)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),  // Add padding to the Row
-            horizontalArrangement = Arrangement.SpaceBetween,  // Space out content
-            verticalAlignment = Alignment.Top // Center align vertically
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top
         ) {
             Column(
                 modifier = Modifier
@@ -523,4 +574,50 @@ fun ChallengeItem(
             }
         }
     }
+}
+
+//3D VIEW
+@Composable
+fun ArObjectViewer(
+    modifier: Modifier = Modifier,
+    modelFilePath: String
+) {
+    AndroidView(
+        modifier = modifier,
+        factory = { context ->
+            ArSceneView(context).apply {
+                // Initialize ARCore scene
+                scene.addOnUpdateListener {
+                    // Load the 3D model
+                    ModelRenderable.builder()
+                        .setSource(context, Uri.parse(modelFilePath))
+                        .build()
+                        .thenAccept { modelRenderable ->
+                            // Create an AnchorNode
+                            val anchorNode = AnchorNode().apply {
+                                setParent(scene)
+                            }
+
+                            // Get the TransformationSystem from an ArFragment
+                            val arFragment = (context as FragmentActivity).supportFragmentManager
+                                .findFragmentById(R.id.arFragment) as ArFragment
+
+                            val transformableNode =
+                                TransformableNode(arFragment.transformationSystem).apply {
+                                    renderable = modelRenderable
+                                    setParent(anchorNode)
+                                }
+
+                            // Add nodes to the scene
+                            scene.addChild(anchorNode)
+                            transformableNode.select()
+                        }
+                        .exceptionally {
+                            Log.e("ArObjectViewer", "Error loading model: ${it.message}")
+                            null
+                        }
+                }
+            }
+        }
+    )
 }

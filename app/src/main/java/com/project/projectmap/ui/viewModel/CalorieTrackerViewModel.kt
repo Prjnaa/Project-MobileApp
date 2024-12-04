@@ -1,36 +1,21 @@
 package com.project.projectmap.ui.viewModel
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
+import com.project.projectmap.firebase.model.DailyIntake
+import com.project.projectmap.firebase.model.User
+import com.project.projectmap.module.getCurrentDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
-import java.text.SimpleDateFormat
-import java.util.*
-
-data class UserNutritionTarget(
-    val fat: Float = 0f,
-    val protein: Float = 0f,
-    val carbohydrate: Float = 0f,
-    val totalCalories: Int = 2000
-)
-
-data class NutritionData(
-    val currentCarbs: Float = 0f,
-    val currentProtein: Float = 0f,
-    val currentFat: Float = 0f,
-    val currentCalories: Int = 0
-)
 
 class CalorieTrackerViewModel : ViewModel() {
-    private val _nutritionData = MutableStateFlow(NutritionData())
-    val nutritionData: StateFlow<NutritionData> = _nutritionData
+    private val _user = MutableStateFlow(User())
+    val user: StateFlow<User> = _user
 
-    private val _nutritionTarget = MutableStateFlow(UserNutritionTarget())
-    val nutritionTarget: StateFlow<UserNutritionTarget> = _nutritionTarget
+    private val _dailyIntake = MutableStateFlow(DailyIntake())
+    val dailyIntake: StateFlow<DailyIntake> = _dailyIntake
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -41,69 +26,54 @@ class CalorieTrackerViewModel : ViewModel() {
     private val currentUser = FirebaseAuth.getInstance().currentUser
     private val db = FirebaseFirestore.getInstance()
 
+    private var intakeListener: ListenerRegistration? = null
+    private var userListener: ListenerRegistration? = null
+
     init {
-        refreshData()
+        startListeningForData()
     }
 
-    fun refreshData() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            currentUser?.let { user ->
-                try {
-                    // Get user targets
-                    val targetDoc = db.collection("userTargets")
-                        .document(user.uid)
-                        .get()
-                        .await()
-
-                    if (targetDoc.exists()) {
-                        _nutritionTarget.value = UserNutritionTarget(
-                            fat = targetDoc.getDouble("fat")?.toFloat() ?: 0f,
-                            protein = targetDoc.getDouble("protein")?.toFloat() ?: 0f,
-                            carbohydrate = targetDoc.getDouble("carbohydrate")?.toFloat() ?: 0f,
-                            totalCalories = targetDoc.getLong("totalCalories")?.toInt() ?: 2000
-                        )
-
-                        // Get today's nutrition entries
-                        val currentDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(
-                            Date()
-                        )
-                        val nutritionEntries = db.collection("dailyNutrition")
-                            .whereEqualTo("userId", user.uid)
-                            .whereEqualTo("date", currentDate)
-                            .get()
-                            .await()
-                        
-                        var currentCarbs = 0f
-                        var currentProtein = 0f
-                        var currentFat = 0f
-                        var currentCalories = 0
-
-                        for (entry in nutritionEntries.documents) {
-                            currentCarbs += entry.getDouble("carbohydrate")?.toFloat() ?: 0f
-                            currentProtein += entry.getDouble("protein")?.toFloat() ?: 0f
-                            currentFat += entry.getDouble("fat")?.toFloat() ?: 0f
-                            currentCalories += entry.getDouble("calories")?.toInt() ?: 0
-                        }
-
-                        _nutritionData.value = NutritionData(
-                            currentCarbs = currentCarbs,
-                            currentProtein = currentProtein,
-                            currentFat = currentFat,
-                            currentCalories = currentCalories
-                        )
-                    } else {
-                        _errorMessage.value = "No nutrition target found. Please set your target."
+    private fun startListeningForData() {
+        currentUser?.let { user ->
+            // Listen to changes in the user document
+            userListener = db.collection("users")
+                .document(user.uid)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        _errorMessage.value = "Error listening to user data: ${error.message}"
+                        return@addSnapshotListener
                     }
-                } catch (e: Exception) {
-                    _errorMessage.value = "Error loading nutrition data: ${e.message}"
-                } finally {
-                    _isLoading.value = false
+                    snapshot?.toObject(User::class.java)?.let {
+                        _user.value = it
+                    }
                 }
-            } ?: run {
-                _errorMessage.value = "No user logged in"
-                _isLoading.value = false
-            }
+
+            // Listen to changes in the daily intake document
+            val currentDate = getCurrentDate()
+            intakeListener = db.collection("intakes")
+                .document("${user.uid}-$currentDate")
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        _errorMessage.value =
+                            "Error listening to daily intake data: ${error.message}"
+                        return@addSnapshotListener
+                    }
+                    snapshot?.toObject(DailyIntake::class.java)?.let {
+                        _dailyIntake.value = it
+                    } ?: run {
+                        _dailyIntake.value = DailyIntake()
+                    }
+                }
+            _isLoading.value = false
+        } ?: run {
+            _errorMessage.value = "No user logged in"
         }
+    }
+
+    // Optionally, if you want to stop listening when the ViewModel is cleared, you can use the following:
+    override fun onCleared() {
+        super.onCleared()
+        userListener?.remove()
+        intakeListener?.remove()
     }
 }
