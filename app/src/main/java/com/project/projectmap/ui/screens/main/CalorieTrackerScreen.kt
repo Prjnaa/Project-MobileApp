@@ -1,6 +1,11 @@
+// CalorieTrackerScreen.kt
 package com.project.projectmap.ui.screens.main
 
+import android.app.Activity
 import android.content.Intent
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -20,7 +25,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
@@ -52,7 +56,6 @@ fun CalorieTrackerScreen(
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-
     val currentUser = FirebaseAuth.getInstance().currentUser
     val db = FirebaseFirestore.getInstance()
 
@@ -62,8 +65,13 @@ fun CalorieTrackerScreen(
     var currentFat by remember { mutableStateOf(0f) }
     var currentCalories by remember { mutableStateOf(0) }
 
+    // State untuk memicu refresh data
+    var refreshTrigger by remember { mutableStateOf(0) }
+
     // Effect untuk mengambil data target dari Firestore
-    LaunchedEffect(currentUser?.uid) {
+    LaunchedEffect(currentUser?.uid, refreshTrigger) {
+        isLoading = true
+        errorMessage = null
         currentUser?.let { user ->
             try {
                 // Get user targets
@@ -113,6 +121,20 @@ fun CalorieTrackerScreen(
         } ?: run {
             errorMessage = "No user logged in"
             isLoading = false
+        }
+    }
+
+    val context = LocalContext.current
+
+    // Launcher untuk CameraActivity
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            // Increment refreshTrigger untuk memicu LaunchedEffect
+            refreshTrigger += 1
+            // Tampilkan pesan sukses
+            Toast.makeText(context, "Data berhasil diperbarui!", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -201,7 +223,11 @@ fun CalorieTrackerScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        TrackEatButton()
+        // TrackEatButton dengan callback
+        TrackEatButton(onTrackEatClick = {
+            val intent = Intent(context, CameraActivity::class.java)
+            launcher.launch(intent)
+        })
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -212,6 +238,22 @@ fun CalorieTrackerScreen(
         DailyChallenges(onHistoryClick = onNavigateToCalendar)
 
         Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@Composable
+fun TrackEatButton(onTrackEatClick: () -> Unit) {
+    Button(
+        onClick = { onTrackEatClick() },
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Purple80
+        ),
+        shape = RoundedCornerShape(24.dp)
+    ) {
+        Text("Track Eat")
     }
 }
 
@@ -411,26 +453,6 @@ fun CalorieProgress(
                 )
             }
         }
-    }
-}
-
-@Composable
-fun TrackEatButton() {
-    val context = LocalContext.current
-    Button(
-        onClick = {
-            val intent = Intent(context, CameraActivity::class.java)
-            context.startActivity(intent)
-        },
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(48.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = Purple80
-        ),
-        shape = RoundedCornerShape(24.dp)
-    ) {
-        Text("Track Eat")
     }
 }
 
