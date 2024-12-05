@@ -41,7 +41,6 @@ import com.project.projectmap.components.msc.PasswordInput
 import com.project.projectmap.firebase.model.Profile
 import com.project.projectmap.module.saveUserProfile
 import com.project.projectmap.firebase.model.DailyIntake
-import com.project.projectmap.firebase.model.User
 import com.project.projectmap.firebase.model.UserTargets
 
 @Composable

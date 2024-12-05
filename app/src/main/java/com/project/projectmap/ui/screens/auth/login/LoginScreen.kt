@@ -98,7 +98,7 @@ fun LoginScreen(
                             if (authTask.isSuccessful) {
                                 val user = auth.currentUser
                                 user?.let { firebaseUser ->
-                                    db.collection("userTargets")
+                                    db.collection("users")
                                         .document(firebaseUser.uid)
                                         .get()
                                         .addOnSuccessListener { document ->
@@ -190,7 +190,7 @@ fun LoginScreen(
                                 if (task.isSuccessful) {
                                     val user = auth.currentUser
                                     user?.let { firebaseUser ->
-                                        db.collection("userTargets")
+                                        db.collection("users")
                                             .document(firebaseUser.uid)
                                             .get()
                                             .addOnSuccessListener { document ->

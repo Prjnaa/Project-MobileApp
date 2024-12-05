@@ -47,17 +47,3 @@ fun saveDailyIntake(
             onComplete(task.isSuccessful)
         }
 }
-
-fun saveHistory(
-    userId: String,
-    date: String,
-    dailyIntake: DailyIntake,
-    db: FirebaseFirestore,
-    onComplete: (Boolean) -> Unit
-) {
-    db.collection("history").document("$userId-$date")
-        .set(dailyIntake)
-        .addOnCompleteListener { task ->
-            onComplete(task.isSuccessful)
-        }
-}
