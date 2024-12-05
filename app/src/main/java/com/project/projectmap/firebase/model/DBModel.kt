@@ -1,5 +1,7 @@
 package com.project.projectmap.firebase.model
 
+import android.content.ClipData.Item
+
 data class User(
     val profile: Profile = Profile(),
     val targets: UserTargets = UserTargets()
@@ -30,5 +32,12 @@ data class FoodItem(
     val calories: Float = 0f,
     val protein: Float = 0f,
     val fat: Float = 0f,
-    val carbs: Float = 0f
+    val carbs: Float = 0f,
+    val type: ItemType
 )
+
+enum class ItemType {
+    Food,
+    Drink
+}
+

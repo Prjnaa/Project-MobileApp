@@ -1,4 +1,4 @@
-package com.project.projectmap.module
+package com.project.projectmap.components.msc
 
 import java.text.SimpleDateFormat
 import java.util.Date

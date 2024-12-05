@@ -2,10 +2,8 @@ package com.project.projectmap.ui.screens.main
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -43,12 +41,10 @@ import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.project.projectmap.R
-import com.project.projectmap.components.msc.Constants
+import com.project.projectmap.components.msc.ConstantsStyle
 import com.project.projectmap.firebase.model.Profile
 import com.project.projectmap.firebase.model.User
 import com.project.projectmap.firebase.model.UserTargets
-import com.project.projectmap.ui.theme.Purple40
-import com.project.projectmap.ui.theme.Purple80
 import java.util.Date
 
 data class NutritionTarget(
@@ -97,7 +93,7 @@ fun SetTargetScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
-            .padding(Constants.APP_PADDING_VAL),
+            .padding(ConstantsStyle.APP_PADDING_VAL),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.Top)
     ) {
@@ -256,7 +252,7 @@ fun SetTargetScreen(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ),
-            shape = RoundedCornerShape(Constants.ROUNDED_CORNER_VAL),
+            shape = RoundedCornerShape(ConstantsStyle.ROUNDED_CORNER_VAL),
             enabled = !isLoading
         ) {
             if (isLoading) {
@@ -322,7 +318,7 @@ fun MacroInputField(
                 unfocusedBorderColor = unfocusedBorderColor,
                 focusedBorderColor = focusedBorderColor
             ),
-            shape = RoundedCornerShape(Constants.ROUNDED_CORNER_VAL),
+            shape = RoundedCornerShape(ConstantsStyle.ROUNDED_CORNER_VAL),
             enabled = !isLoading
         )
     }

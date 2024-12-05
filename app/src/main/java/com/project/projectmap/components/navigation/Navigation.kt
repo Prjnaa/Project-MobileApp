@@ -1,6 +1,11 @@
 package com.project.projectmap.components.navigation
 
+import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -14,6 +19,7 @@ import com.project.projectmap.ui.screens.main.MainTrackerScreen
 import com.project.projectmap.ui.screens.main.SetTargetScreen
 import com.project.projectmap.ui.screens.profile.ProfileScreen
 
+
 object AppDestinations {
     const val LOGIN_ROUTE = "login"
     const val REGISTER_ROUTE = "register"
@@ -25,10 +31,22 @@ object AppDestinations {
 }
 
 @Composable
-fun AppNavGraph(
+fun Navigation(
     navController: NavHostController = rememberNavController(),
+    context: Context
 ) {
-    val isLoggedIn = FirebaseAuth.getInstance().currentUser != null
+    val auth = FirebaseAuth.getInstance()
+    var isLoggedIn by remember { mutableStateOf(false) }
+
+//    val cachedUserId = getCachedUserId(context)
+//    val sessionExpired = isSessionExpired(context)
+
+//    LaunchedEffect(cachedUserId) {
+//        if (!sessionExpired && cachedUserId != null) {
+//            val currentUser = auth.getUser(cachedUserId)
+//            isLoggedIn = currentUser != null
+//        }
+//    }
 
     val startDestination = if (isLoggedIn) {
         AppDestinations.MAIN_ROUTE
@@ -147,7 +165,8 @@ fun AppNavGraph(
                     navController.popBackStack()
                 },
                 onLogout = {
-                    // Navigate to login and clear the back stack
+                    FirebaseAuth.getInstance().signOut()
+//                    clearCachedUserData(context)
                     navController.navigate(AppDestinations.LOGIN_ROUTE) {
                         popUpTo(0) { inclusive = true }
                     }
@@ -156,3 +175,19 @@ fun AppNavGraph(
         }
     }
 }
+
+//fun checkAndHandleLoggedOutState(context: Context) {
+//    val auth = FirebaseAuth.getInstance()
+//    val cachedUserId = getCachedUserId(context)
+//
+//    if (cachedUserId != null && auth.getUser(cachedUserId) == null) {
+//        // User no longer exists in Firebase
+//
+//        FirebaseAuth.getInstance().signOut()
+//        clearCachedUserData(context) // Clear cached user data
+//    }
+//}
+//
+//fun FirebaseAuth.getUser(userId: String): FirebaseUser? {
+//    return this.getUser(userId)
+//}

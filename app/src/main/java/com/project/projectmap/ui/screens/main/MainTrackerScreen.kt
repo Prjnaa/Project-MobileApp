@@ -5,7 +5,6 @@ import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -58,9 +57,9 @@ import com.google.ar.sceneform.ux.TransformableNode
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.project.projectmap.R
-import com.project.projectmap.components.msc.Constants
+import com.project.projectmap.components.msc.ConstantsStyle
 import com.project.projectmap.ui.theme.ProjectmapTheme
-import com.project.projectmap.ui.viewModel.CalorieTrackerViewModel
+import com.project.projectmap.ui.viewModel.MainTrackerViewModel
 import kotlin.random.Random
 
 @Composable
@@ -75,7 +74,7 @@ fun MainTrackerScreenPreview() {
 @Preview(showBackground = true)
 fun ChallengesPreview() {
     ProjectmapTheme(darkTheme = false) {
-        ChallengeList()
+        HistoryList()
     }
 }
 
@@ -86,7 +85,7 @@ fun MainTrackerScreen(
     onNavigateToBadges: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
     onNavigateToNewTarget: () -> Unit = {},
-    viewModel: CalorieTrackerViewModel = CalorieTrackerViewModel()
+    viewModel: MainTrackerViewModel = MainTrackerViewModel()
 ) {
     val user by viewModel.user.collectAsState()
     val intake by viewModel.dailyIntake.collectAsState()
@@ -100,9 +99,9 @@ fun MainTrackerScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(color = MaterialTheme.colorScheme.background)
-            .padding(start = 16.dp, top = 54.dp, end = 16.dp, bottom = 0.dp)
+            .padding(ConstantsStyle.APP_PADDING_VAL)
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
 
         user?.let { userInfo ->
@@ -141,7 +140,7 @@ fun MainTrackerScreen(
             }
         }
 
-        ChallengeList(
+        HistoryList(
             onNavToCalendar = onNavigateToCalendar
         )
     }
@@ -257,8 +256,7 @@ fun CurrentStats(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .border(width = 2.dp, color = MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(16.dp)),
+            .padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -276,14 +274,14 @@ fun Tracker(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .border(width = 2.dp, color = MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(16.dp)),
+            .offset(y = (-42).dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Image(
             painter = painterResource(id = R.drawable.char_bunny),
             contentDescription = "Calories Icon",
             modifier = Modifier
-                .scale(0.8f)
+                .scale(0.75f)
         )
 //        CHARACTER
 //        ArObjectViewer(
@@ -300,12 +298,12 @@ fun Tracker(
         TrackEatButton()
 
 //        SET NEW TARGET
-        SetNewTargetLink(onNavToNewTarget)
+        SetNewTargetLink(onNavToNewTarget = onNavToNewTarget)
     }
 }
 
 @Composable
-fun ChallengeList(
+fun HistoryList(
     onNavToCalendar: () -> Unit = {}
 ) {
     val items = List(20) { index -> "This is challenge number #${index}" } //Sample
@@ -313,9 +311,10 @@ fun ChallengeList(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(600.dp),
+            .height(600.dp)
+            .offset(y = (-42).dp),
         color = MaterialTheme.colorScheme.primaryContainer,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(ConstantsStyle.ROUNDED_CORNER_MD_VAL),
 
         ) {
         Column(
@@ -330,7 +329,7 @@ fun ChallengeList(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Today's Challenges",
+                    text = "Today's History",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary
@@ -341,7 +340,7 @@ fun ChallengeList(
                         containerColor = Color.Transparent,
                         contentColor = MaterialTheme.colorScheme.primary
                     ),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(ConstantsStyle.ROUNDED_CORNER_SM_VAL),
                     contentPadding = PaddingValues(2.dp)
                 ) {
 //                    CALENDAR NAVIGATE BUTTON
@@ -361,15 +360,21 @@ fun ChallengeList(
                 }
             }
 
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                shape = RoundedCornerShape(ConstantsStyle.ROUNDED_CORNER_VAL),
+                color = Color.Transparent
+            ) {
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 itemsIndexed(items) { index, item ->
                     val random = (1..100).random()
                     val isDone = Random.nextBoolean()
-                    ChallengeItem(index = index, text = item, isDone = isDone, coinCount = random)
+                    HistoryItem(index = index, text = item, isDone = isDone, coinCount = random)
                 }
             }
+                }
         }
     }
 }
@@ -414,6 +419,7 @@ fun CalorieTracker(current: Int, target: Int) {
             modifier = Modifier
                 .offset(y = (-24).dp),
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
                 text = "$current",
@@ -435,7 +441,7 @@ fun CalorieTracker(current: Int, target: Int) {
 //TRACK EAT BUTTON
 @Composable
 fun TrackEatButton() {
-    Row(modifier = Modifier.offset(y = (-112).dp), horizontalArrangement = Arrangement.Center) {
+    Row(modifier = Modifier.offset(y = (-100).dp), horizontalArrangement = Arrangement.Center) {
         Button(
             onClick = { /*TODO*/ },
             colors = ButtonDefaults.buttonColors(
@@ -465,7 +471,9 @@ fun SetNewTargetLink(
         modifier = Modifier
             .padding(top = 16.dp)
             .offset(y = (-72).dp)
-            .clickable { }
+            .clickable {
+                onNavToNewTarget()
+            }
 
     )
 }
@@ -505,7 +513,7 @@ fun MacroItem(title: String, progress: Float, target: Float) {
                 .align(Alignment.CenterHorizontally)
                 .background(
                     color = MaterialTheme.colorScheme.onTertiary.copy(alpha = if (surplus > 0) 1f else 0f),
-                    shape = RoundedCornerShape(Constants.ROUNDED_CORNER_SM_VAL)
+                    shape = RoundedCornerShape(ConstantsStyle.ROUNDED_CORNER_SM_VAL)
                 )
                 .padding(vertical = 2.dp, horizontal = 8.dp)
         )
@@ -514,7 +522,7 @@ fun MacroItem(title: String, progress: Float, target: Float) {
 
 //CHALLENGE ITEM
 @Composable
-fun ChallengeItem(
+fun HistoryItem(
     index: Int,
     title: String = "Default Title $index",
     text: String,
@@ -527,7 +535,7 @@ fun ChallengeItem(
         modifier = Modifier
             .fillMaxWidth(),  // Ensure it fills the width
         color = MaterialTheme.colorScheme.primary,
-        shape = RoundedCornerShape(Constants.ROUNDED_CORNER_VAL)
+        shape = RoundedCornerShape(ConstantsStyle.ROUNDED_CORNER_VAL)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),

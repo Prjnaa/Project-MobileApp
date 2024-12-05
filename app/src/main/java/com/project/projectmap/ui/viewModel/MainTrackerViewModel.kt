@@ -6,11 +6,11 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.project.projectmap.firebase.model.DailyIntake
 import com.project.projectmap.firebase.model.User
-import com.project.projectmap.module.getCurrentDate
+import com.project.projectmap.components.msc.getCurrentDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-class CalorieTrackerViewModel : ViewModel() {
+class MainTrackerViewModel : ViewModel() {
     private val _user = MutableStateFlow(User())
     val user: StateFlow<User> = _user
 

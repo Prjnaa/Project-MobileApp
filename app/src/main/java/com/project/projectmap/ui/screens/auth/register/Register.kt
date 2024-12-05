@@ -35,12 +35,10 @@ import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.userProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
-import com.project.projectmap.module.getCurrentDate
-import com.project.projectmap.module.saveDailyIntake
 import com.project.projectmap.components.msc.PasswordInput
-import com.project.projectmap.firebase.model.Profile
-import com.project.projectmap.module.saveUserProfile
+import com.project.projectmap.components.msc.getCurrentDate
 import com.project.projectmap.firebase.model.DailyIntake
+import com.project.projectmap.firebase.model.Profile
 import com.project.projectmap.firebase.model.User
 import com.project.projectmap.firebase.model.UserTargets
 
@@ -85,7 +83,10 @@ fun RegisterScreen(
         // Username Field
         OutlinedTextField(
             value = username,
-            onValueChange = { username = it },
+            onValueChange = {
+                username = it
+                errorMessage = null
+            },
             label = { Text("Username") },
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth()
@@ -94,7 +95,10 @@ fun RegisterScreen(
         // Email Field
         OutlinedTextField(
             value = email,
-            onValueChange = { email = it },
+            onValueChange = {
+                email = it
+                errorMessage = null
+            },
             label = { Text("Email") },
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth()
@@ -103,17 +107,33 @@ fun RegisterScreen(
         // Password Field
         PasswordInput(
             password = password,
-            onPasswordChange = { password = it },
+            onPasswordChange = {
+                password = it
+                errorMessage = null
+            },
             modifier = Modifier.fillMaxWidth(),
         )
 
         // Re-enter Password Field
         PasswordInput(
             password = confirmPassword,
-            onPasswordChange = { confirmPassword = it },
+            onPasswordChange = {
+                confirmPassword = it
+                errorMessage = null
+            },
             label = "Confirm Password",
             modifier = Modifier.fillMaxWidth(),
         )
+
+        // Error Message
+        errorMessage?.let {
+            Text(
+                text = it,
+                color = MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(0.8f)
+            )
+        }
 
         // Register Button
         Column(
@@ -137,7 +157,7 @@ fun RegisterScreen(
                         errorMessage = "Passwords do not match"
                     } else {
                         isLoading = true
-                        auth.createUserWithEmailAndPassword(email, password, )
+                        auth.createUserWithEmailAndPassword(email, password)
                             .addOnCompleteListener { task ->
                                 if (task.isSuccessful) {
                                     val currentUser = auth.currentUser
@@ -226,16 +246,6 @@ fun RegisterScreen(
                 }
             }
 
-            // Error Message
-            errorMessage?.let {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = it,
-                    color = MaterialTheme.colorScheme.error,
-                    style = TextStyle(fontSize = 14.sp)
-                )
-            }
-
             // Login Link
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -265,5 +275,47 @@ fun RegisterScreen(
 private fun isValidEmail(email: String): Boolean {
     val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$"
     return email.matches(emailRegex.toRegex())
+}
+
+private fun saveUserProfile(
+    userId: String,
+    profile: Profile,
+    targets: UserTargets,
+    db: FirebaseFirestore,
+    onComplete: (Boolean) -> Unit,
+    errorMessage: (String) -> Unit
+) {
+    val firestore = db
+    val userRef = firestore.collection("users").document(userId)
+
+    val user = User(
+        profile = profile,
+        targets = targets
+    )
+
+    userRef.set(user).addOnCompleteListener { task ->
+        if (task.isSuccessful) {
+            onComplete(true)
+        } else {
+            onComplete(false)
+            task.exception?.let { exception ->
+                errorMessage(exception.message ?: "An error occurred")
+            }
+        }
+    }
+}
+
+private fun saveDailyIntake(
+    userId: String,
+    date: String,
+    dailyIntake: DailyIntake,
+    db: FirebaseFirestore,
+    onComplete: (Boolean) -> Unit
+) {
+    db.collection("intakes").document("$userId-$date")
+        .set(dailyIntake)
+        .addOnCompleteListener { task ->
+            onComplete(task.isSuccessful)
+        }
 }
 
