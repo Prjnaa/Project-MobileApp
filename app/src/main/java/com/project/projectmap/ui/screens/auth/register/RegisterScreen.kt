@@ -4,7 +4,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,6 +12,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -26,8 +27,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -40,7 +43,6 @@ import com.project.projectmap.components.msc.getCurrentDate
 import com.project.projectmap.firebase.model.DailyIntake
 import com.project.projectmap.firebase.model.Profile
 import com.project.projectmap.firebase.model.User
-import com.project.projectmap.firebase.model.UserTargets
 
 @Composable
 fun RegisterScreen(
@@ -56,6 +58,8 @@ fun RegisterScreen(
 
     val auth = FirebaseAuth.getInstance()
     val db = FirebaseFirestore.getInstance()
+
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     Column(
         modifier = Modifier
@@ -89,7 +93,15 @@ fun RegisterScreen(
             },
             label = { Text("Username") },
             shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions.Default.copy(
+                imeAction = ImeAction.Done
+            ),
+            keyboardActions = KeyboardActions(
+                onDone = {
+                    keyboardController?.hide()
+                }
+            ),
         )
 
         // Email Field
@@ -101,7 +113,15 @@ fun RegisterScreen(
             },
             label = { Text("Email") },
             shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions.Default.copy(
+                imeAction = ImeAction.Done
+            ),
+            keyboardActions = KeyboardActions(
+                onDone = {
+                    keyboardController?.hide()
+                }
+            ),
         )
 
         // Password Field
@@ -112,6 +132,9 @@ fun RegisterScreen(
                 errorMessage = null
             },
             modifier = Modifier.fillMaxWidth(),
+            onImeAction = {
+                keyboardController?.hide()
+            }
         )
 
         // Re-enter Password Field
@@ -123,6 +146,9 @@ fun RegisterScreen(
             },
             label = "Confirm Password",
             modifier = Modifier.fillMaxWidth(),
+            onImeAction = {
+                keyboardController?.hide()
+            }
         )
 
         // Error Message
@@ -173,19 +199,11 @@ fun RegisterScreen(
                                             email = email,
                                         )
 
-                                        val targets = UserTargets(
-                                            calorieTarget = 0f,
-                                            proteinTarget = 0f,
-                                            fatTarget = 0f,
-                                            carbsTarget = 0f
-                                        )
-
                                         currentUser?.updateProfile(displayNameUpdate)
 
                                         saveUserProfile(
                                             userId = userId,
                                             profile = profile,
-                                            targets = targets,
                                             db = db,
                                             onComplete = { success ->
                                                 if (success) {
@@ -280,7 +298,6 @@ private fun isValidEmail(email: String): Boolean {
 private fun saveUserProfile(
     userId: String,
     profile: Profile,
-    targets: UserTargets,
     db: FirebaseFirestore,
     onComplete: (Boolean) -> Unit,
     errorMessage: (String) -> Unit
@@ -289,8 +306,7 @@ private fun saveUserProfile(
     val userRef = firestore.collection("users").document(userId)
 
     val user = User(
-        profile = profile,
-        targets = targets
+        profile = profile
     )
 
     userRef.set(user).addOnCompleteListener { task ->

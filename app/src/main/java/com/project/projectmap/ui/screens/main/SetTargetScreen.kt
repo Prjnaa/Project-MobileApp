@@ -62,13 +62,14 @@ fun SetTargetScreen(
     onClose: () -> Unit,
     onContinue: () -> Unit
 ) {
-    var fat by remember { mutableStateOf("0") }
-    var carbohydrate by remember { mutableStateOf("0") }
-    var protein by remember { mutableStateOf("0") }
+    var currentFatTarget by remember { mutableStateOf("0") }
+    var currentCarbsTarget by remember { mutableStateOf("0") }
+    var currentProteinTarget by remember { mutableStateOf("0") }
+
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
 
-    val calories = calculateCalories(fat, protein, carbohydrate)
+    val calories = calculateCalories(currentFatTarget, currentProteinTarget, currentCarbsTarget)
 
     val auth = FirebaseAuth.getInstance()
     val db = FirebaseFirestore.getInstance()
@@ -81,9 +82,13 @@ fun SetTargetScreen(
             val userRef = db.collection("users").document(userId)
 
             userRef.get().addOnSuccessListener { documentSnapshot ->
-                fat = documentSnapshot.getString("fat") ?: "0"
-                carbohydrate = documentSnapshot.getString("carbohydrate") ?: "0"
-                protein = documentSnapshot.getString("protein") ?: "0"
+                val userDoc = documentSnapshot.toObject(User::class.java)
+                if (userDoc != null) {
+                    val target = userDoc.targets
+                    currentFatTarget = target.fatTarget.toString()
+                    currentCarbsTarget = target.carbsTarget.toString()
+                    currentProteinTarget = target.proteinTarget.toString()
+                }
             }
         }
     }
@@ -160,22 +165,22 @@ fun SetTargetScreen(
             Column {
                 MacroInputField(
                     label = "Fat (grams)",
-                    value = fat,
-                    onValueChange = { fat = it },
+                    value = currentFatTarget,
+                    onValueChange = { currentFatTarget = it },
                     isLoading = isLoading
                 )
 
                 MacroInputField(
                     label = "Carbohydrate (grams)",
-                    value = carbohydrate,
-                    onValueChange = { carbohydrate = it },
+                    value = currentCarbsTarget,
+                    onValueChange = { currentCarbsTarget = it },
                     isLoading = isLoading
                 )
 
                 MacroInputField(
                     label = "Protein (grams)",
-                    value = protein,
-                    onValueChange = { protein = it },
+                    value = currentProteinTarget,
+                    onValueChange = { currentProteinTarget = it },
                     isLoading = isLoading
                 )
             }
@@ -195,9 +200,9 @@ fun SetTargetScreen(
         // Save Button
         Button(
             onClick = {
-                val fatValue = fat.toFloatOrNull()
-                val carbValue = carbohydrate.toFloatOrNull()
-                val proteinValue = protein.toFloatOrNull()
+                val fatValue = currentFatTarget.toFloatOrNull()
+                val carbValue = currentCarbsTarget.toFloatOrNull()
+                val proteinValue = currentProteinTarget.toFloatOrNull()
 
                 when {
                     fatValue == null || carbValue == null || proteinValue == null -> {
@@ -216,10 +221,6 @@ fun SetTargetScreen(
                             val uid = user.uid
 
                             val newTarget = User(
-                                profile = Profile(
-                                    name = user.displayName ?: "",
-                                    email = user.email ?: "",
-                                ),
                                 targets = UserTargets(
                                     calorieTarget = calories.toFloat(),
                                     fatTarget = fatValue,
@@ -313,6 +314,7 @@ fun MacroInputField(
                 color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 16.sp
             ),
+            singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             colors = OutlinedTextFieldDefaults.colors(
                 unfocusedBorderColor = unfocusedBorderColor,

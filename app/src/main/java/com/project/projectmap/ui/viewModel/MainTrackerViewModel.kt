@@ -4,9 +4,9 @@ import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.project.projectmap.components.msc.getCurrentDate
 import com.project.projectmap.firebase.model.DailyIntake
 import com.project.projectmap.firebase.model.User
-import com.project.projectmap.components.msc.getCurrentDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -68,6 +68,7 @@ class MainTrackerViewModel : ViewModel() {
         } ?: run {
             _errorMessage.value = "No user logged in"
         }
+
     }
 
     // Optionally, if you want to stop listening when the ViewModel is cleared, you can use the following:

@@ -69,10 +69,11 @@ class CameraActivity : ComponentActivity() {
                         modifier = Modifier
                             .fillMaxWidth()
                             .align(Alignment.BottomCenter)
-                            .padding(16.dp),
+                            .offset(y = (-32).dp),
                         horizontalArrangement = Arrangement.SpaceAround
                     ) {
                         IconButton(
+                            modifier = Modifier.size(52.dp),
                             onClick = {
                                 takePhoto(controller) { bitmap ->
                                     if (bitmap != null) {
@@ -99,7 +100,9 @@ class CameraActivity : ComponentActivity() {
                         ) {
                             Icon(
                                 imageVector = ImageVector.vectorResource(id = R.drawable.camera_capture),
-                                contentDescription = "Capture"
+                                contentDescription = "Capture",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(52.dp)
                             )
                         }
                     }
@@ -110,7 +113,7 @@ class CameraActivity : ComponentActivity() {
                                 showBottomSheet = false
                             },
                             sheetState = bottomSheetState,
-                            containerColor = Color(0xFFF3E5F5)
+                            containerColor = MaterialTheme.colorScheme.surface,
                         ) {
                             PhotoBottomSheetContent(
                                 foodName = predictedFoodName,

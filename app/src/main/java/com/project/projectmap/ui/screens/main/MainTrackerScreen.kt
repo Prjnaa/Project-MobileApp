@@ -1,7 +1,6 @@
 package com.project.projectmap.ui.screens.main
 
-import android.net.Uri
-import android.util.Log
+import android.content.Intent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -40,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -47,19 +47,16 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.fragment.app.FragmentActivity
-import com.google.ar.sceneform.AnchorNode
-import com.google.ar.sceneform.ArSceneView
-import com.google.ar.sceneform.rendering.ModelRenderable
-import com.google.ar.sceneform.ux.ArFragment
-import com.google.ar.sceneform.ux.TransformableNode
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.project.projectmap.R
 import com.project.projectmap.components.msc.ConstantsStyle
+import com.project.projectmap.components.msc.getCurrentDate
+import com.project.projectmap.firebase.model.FoodItem
+import com.project.projectmap.ui.screens.camera.CameraActivity
 import com.project.projectmap.ui.theme.ProjectmapTheme
 import com.project.projectmap.ui.viewModel.MainTrackerViewModel
+import kotlin.math.roundToInt
 import kotlin.random.Random
 
 @Composable
@@ -74,7 +71,7 @@ fun MainTrackerScreenPreview() {
 @Preview(showBackground = true)
 fun ChallengesPreview() {
     ProjectmapTheme(darkTheme = false) {
-        HistoryList()
+//        HistoryList()
     }
 }
 
@@ -91,9 +88,7 @@ fun MainTrackerScreen(
     val intake by viewModel.dailyIntake.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
-
-    val currentUser = FirebaseAuth.getInstance().currentUser
-    val db = FirebaseFirestore.getInstance()
+    val items = intake.items.values.toList()
 
     Column(
         modifier = Modifier
@@ -141,7 +136,8 @@ fun MainTrackerScreen(
         }
 
         HistoryList(
-            onNavToCalendar = onNavigateToCalendar
+            onNavToCalendar = onNavigateToCalendar,
+            items = items
         )
     }
 }
@@ -195,28 +191,28 @@ fun TopBar(
                 verticalAlignment = Alignment.CenterVertically
             ) {
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.streak_icon_24),
-                        contentDescription = "Streak Icon",
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(30.dp)
-                    )
-                    Text(
-                        text = "200",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
+//                Row(
+//                    verticalAlignment = Alignment.CenterVertically,
+//                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+//                ) {
+//                    Icon(
+//                        painter = painterResource(id = R.drawable.streak_icon_24),
+//                        contentDescription = "Streak Icon",
+//                        tint = MaterialTheme.colorScheme.onPrimary,
+//                        modifier = Modifier.size(30.dp)
+//                    )
+//                    Text(
+//                        text = "200",
+//                        fontSize = 18.sp,
+//                        fontWeight = FontWeight.Medium
+//                    )
+//                }
 
-                VerticalDivider(
-                    thickness = 2.dp,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
-                    modifier = Modifier.padding(vertical = 10.dp)
-                )
+//                VerticalDivider(
+//                    thickness = 2.dp,
+//                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
+//                    modifier = Modifier.padding(vertical = 10.dp)
+//                )
 
 //                NAVIGATE TO BADGES BUTTON
                 Row(
@@ -271,6 +267,8 @@ fun CurrentStats(
 fun Tracker(
     currentCalories: Int = 999, targetCalories: Int = 9999, onNavToNewTarget: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -295,7 +293,10 @@ fun Tracker(
         CalorieTracker(current = currentCalories, target = targetCalories)
 
 //        TRACK EAT BUTTONS
-        TrackEatButton()
+        TrackEatButton(onLaunchCamera = {
+            val intent = Intent(context, CameraActivity::class.java)
+            context.startActivity(intent)  // Launch the CameraActivity
+        })
 
 //        SET NEW TARGET
         SetNewTargetLink(onNavToNewTarget = onNavToNewTarget)
@@ -304,9 +305,11 @@ fun Tracker(
 
 @Composable
 fun HistoryList(
-    onNavToCalendar: () -> Unit = {}
+    onNavToCalendar: () -> Unit = {},
+    items: List<FoodItem>
 ) {
-    val items = List(20) { index -> "This is challenge number #${index}" } //Sample
+
+    val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
     Surface(
         modifier = Modifier
@@ -365,16 +368,17 @@ fun HistoryList(
                 shape = RoundedCornerShape(ConstantsStyle.ROUNDED_CORNER_VAL),
                 color = Color.Transparent
             ) {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
-                itemsIndexed(items) { index, item ->
-                    val random = (1..100).random()
-                    val isDone = Random.nextBoolean()
-                    HistoryItem(index = index, text = item, isDone = isDone, coinCount = random)
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                ) {
+                    itemsIndexed(items) { index, item ->
+//                        val random = (1..100).random()
+//                        val isDone = Random.nextBoolean()
+                        val cal = item.calories.roundToInt().toString()
+                        HistoryItem(index = index, title = item.name, text = cal)
+                    }
                 }
             }
-                }
         }
     }
 }
@@ -440,10 +444,10 @@ fun CalorieTracker(current: Int, target: Int) {
 
 //TRACK EAT BUTTON
 @Composable
-fun TrackEatButton() {
+fun TrackEatButton(onLaunchCamera: () -> Unit = {}) {
     Row(modifier = Modifier.offset(y = (-100).dp), horizontalArrangement = Arrangement.Center) {
         Button(
-            onClick = { /*TODO*/ },
+            onClick = { onLaunchCamera() },
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
@@ -526,8 +530,7 @@ fun HistoryItem(
     index: Int,
     title: String = "Default Title $index",
     text: String,
-    isDone: Boolean,
-    coinCount: Int
+//    coinCount: Int
 ) {
     val capitalizedTitle = title.split(" ").joinToString(" ") { it.capitalize() }
 
@@ -554,78 +557,70 @@ fun HistoryItem(
                     modifier = Modifier.padding(end = 8.dp)
                 )
                 Text(
-                    text = text,
+                    text = "$text Calories",
                     fontSize = 16.sp,
                 )
             }
-
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.Bottom)
-            ) {
-
-                Icon(
-                    painter = painterResource(R.drawable.check_circle_24),
-                    contentDescription = "Check Icon",
-                    tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = if (isDone) 1f else 0.0f),
-                    modifier = Modifier
-                        .size(32.dp)
-                )
-
-                Row(
-                ) {
-                    Text(
-                        "+ $coinCount Coins", fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = if (isDone) 1f else 0.0f)
-                    )
-                }
-            }
+//            Column(
+//                horizontalAlignment = Alignment.End,
+//                verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.Bottom)
+//            ) {
+//
+//                Row(
+//                ) {
+//                    Text(
+//                        "+ $coinCount Coins", fontSize = 14.sp,
+//                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = if (isDone) 1f else 0.0f)
+//                    )
+//                }
+//            }
         }
     }
 }
 
-//3D VIEW
-@Composable
-fun ArObjectViewer(
-    modifier: Modifier = Modifier,
-    modelFilePath: String
-) {
-    AndroidView(
-        modifier = modifier,
-        factory = { context ->
-            ArSceneView(context).apply {
-                // Initialize ARCore scene
-                scene.addOnUpdateListener {
-                    // Load the 3D model
-                    ModelRenderable.builder()
-                        .setSource(context, Uri.parse(modelFilePath))
-                        .build()
-                        .thenAccept { modelRenderable ->
-                            // Create an AnchorNode
-                            val anchorNode = AnchorNode().apply {
-                                setParent(scene)
-                            }
 
-                            // Get the TransformationSystem from an ArFragment
-                            val arFragment = (context as FragmentActivity).supportFragmentManager
-                                .findFragmentById(R.id.arFragment) as ArFragment
-
-                            val transformableNode =
-                                TransformableNode(arFragment.transformationSystem).apply {
-                                    renderable = modelRenderable
-                                    setParent(anchorNode)
-                                }
-
-                            // Add nodes to the scene
-                            scene.addChild(anchorNode)
-                            transformableNode.select()
-                        }
-                        .exceptionally {
-                            Log.e("ArObjectViewer", "Error loading model: ${it.message}")
-                            null
-                        }
-                }
-            }
-        }
-    )
-}
+////3D VIEW
+//@Composable
+//fun ArObjectViewer(
+//    modifier: Modifier = Modifier,
+//    modelFilePath: String
+//) {
+//    AndroidView(
+//        modifier = modifier,
+//        factory = { context ->
+//            ArSceneView(context).apply {
+//                // Initialize ARCore scene
+//                scene.addOnUpdateListener {
+//                    // Load the 3D model
+//                    ModelRenderable.builder()
+//                        .setSource(context, Uri.parse(modelFilePath))
+//                        .build()
+//                        .thenAccept { modelRenderable ->
+//                            // Create an AnchorNode
+//                            val anchorNode = AnchorNode().apply {
+//                                setParent(scene)
+//                            }
+//
+//                            // Get the TransformationSystem from an ArFragment
+//                            val arFragment = (context as FragmentActivity).supportFragmentManager
+//                                .findFragmentById(R.id.arFragment) as ArFragment
+//
+//                            val transformableNode =
+//                                TransformableNode(arFragment.transformationSystem).apply {
+//                                    renderable = modelRenderable
+//                                    setParent(anchorNode)
+//                                }
+//
+//                            // Add nodes to the scene
+//                            scene.addChild(anchorNode)
+//                            transformableNode.select()
+//                        }
+//                        .exceptionally {
+//                            Log.e("ArObjectViewer", "Error loading model: ${it.message}")
+//                            null
+//                        }
+//                }
+//            }
+//        }
+//    )
+//}

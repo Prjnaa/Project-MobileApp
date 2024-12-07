@@ -37,15 +37,37 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.project.projectmap.R
+import com.project.projectmap.firebase.model.User
 
 @Composable
 fun ProfileScreen(
     onClose: () -> Unit,
     onLogout: () -> Unit
 ) {
+    var userName by remember { mutableStateOf("user") }
+    var userEmail by remember { mutableStateOf("") }
+
+    var userTargetCals by remember { mutableStateOf("0") }
+
     var selectedGender by remember { mutableStateOf("Male") }
     var reminderTime by remember { mutableStateOf("Every 6 Hours") }
+
+    val db = FirebaseFirestore.getInstance()
+    val currentUser = FirebaseAuth.getInstance().currentUser
+
+    val userRef = db.collection("users").document(currentUser?.uid ?: "")
+
+    userRef.get().addOnSuccessListener { document ->
+        val user = document.toObject(User::class.java)
+        if (user != null) {
+            val profile = user.profile
+            userName = profile.name
+            userEmail = profile.email
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -86,7 +108,7 @@ fun ProfileScreen(
                 // The content will be centered by default
             }
             Text(
-                text = "Hosea",
+                text = userName,
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -96,21 +118,12 @@ fun ProfileScreen(
         ProfileSection(
             title = "My Profile",
             content = {
-                ProfileField("Name", "Hosea")
+                ProfileField("Name", userName)
                 ProfileField("Birthday", "06/07/1970")
                 ProfileField("Gender", selectedGender, true) {
                     selectedGender = if (selectedGender == "Male") "Female" else "Male"
                 }
-                ProfileField("Email", "Hosea@gmail.com")
-                ProfileField("Location", "Indonesia")
-            }
-        )
-
-        // Target Section
-        ProfileSection(
-            title = "Target",
-            content = {
-                ProfileField("Set Your Target Calories", "2000")
+                ProfileField("Email", userEmail)
             }
         )
 
@@ -136,9 +149,9 @@ fun ProfileScreen(
             ),
             shape = RoundedCornerShape(16.dp)
         ) {
-            Text("Log Out", color = Color.White)
+            Text("Log Out", color = MaterialTheme.colorScheme.onError)
         }
-        
+
         Spacer(modifier = Modifier.height(16.dp))
     }
 }
@@ -186,7 +199,12 @@ private fun ProfileField(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = label, color = MaterialTheme.colorScheme.onBackground, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+        Text(
+            text = label,
+            color = MaterialTheme.colorScheme.onBackground,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Medium
+        )
         if (isDropdown) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,

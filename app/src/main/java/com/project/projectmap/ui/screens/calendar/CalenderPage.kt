@@ -1,5 +1,6 @@
 package com.project.projectmap.ui.screens.calendar
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,39 +39,59 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.project.projectmap.R
+import com.google.firebase.firestore.toObject
+import com.project.projectmap.firebase.model.DailyIntake
 import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
 @Composable
 fun CalendarPage(onClose: () -> Unit) {
     var currentMonth by remember { mutableStateOf(YearMonth.now()) }
+
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+    val formattedDate = selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+
     var dailyHistory by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val db = FirebaseFirestore.getInstance()
+    val currentUser = FirebaseAuth.getInstance().currentUser
 
     // Fetch data for the selected date
     LaunchedEffect(selectedDate) {
         try {
             isLoading = true
-            val snapshot = db.collection("dailyNutrition")
-                .whereEqualTo("date", selectedDate.toString())
-                .get()
-                .await()
+            val dailyIntake = fetchDailyIntake(
+                db = db,
+                userId = currentUser?.uid ?: "",
+                selectedDate = formattedDate
+            )
 
-            dailyHistory = snapshot.documents.mapNotNull { it.data }
+            if (dailyIntake != null) {
+                dailyHistory = dailyIntake.items.map { (key, value) ->
+                    mapOf(
+                        "name" to value.name,
+                        "calories" to value.calories,
+                        "protein" to value.protein,
+                        "fat" to value.fat,
+                        "carbs" to value.carbs,
+                    )
+                }
+            } else {
+                dailyHistory = emptyList()
+            }
+            Log.d("CalendarPage", "Daily History: $dailyIntake")
         } catch (e: Exception) {
             errorMessage = "Error fetching data: ${e.message}"
         } finally {
@@ -95,7 +116,11 @@ fun CalendarPage(onClose: () -> Unit) {
                 onClick = onClose,
                 modifier = Modifier.align(Alignment.TopEnd)
             ) {
-                Icon(Icons.Default.Close, contentDescription = "Close", modifier = Modifier.size(24.dp))
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = "Close",
+                    modifier = Modifier.size(24.dp)
+                )
             }
         }
 
@@ -231,7 +256,7 @@ fun CalendarPage(onClose: () -> Unit) {
                 if (isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.CenterHorizontally),
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.primary
                     )
                 } else if (errorMessage != null) {
                     Text(
@@ -247,10 +272,10 @@ fun CalendarPage(onClose: () -> Unit) {
                         items(dailyHistory) { history ->
                             ChallengeItem(
                                 index = dailyHistory.indexOf(history),
-                                title = history["foodName"]?.toString() ?: "Unknown",
+                                title = history["name"]?.toString() ?: "Unknown",
                                 text = "Calories: ${(history["calories"] as? Number)?.toInt() ?: 0}",
                                 isDone = true,
-                                coinCount = 10
+//                                coinCount = 10
                             )
                         }
                     }
@@ -267,7 +292,7 @@ fun ChallengeItem(
     title: String = "Default Title $index",
     text: String,
     isDone: Boolean,
-    coinCount: Int
+//    coinCount: Int
 ) {
     val capitalizedTitle = title.split(" ").joinToString(" ") { it.capitalize() }
 
@@ -297,29 +322,29 @@ fun ChallengeItem(
                     text = text,
                     fontSize = 16.sp,
                 )
-            }
-
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.Bottom)
-            ) {
-
-                Icon(
-                    painter = painterResource(R.drawable.check_circle_24),
-                    contentDescription = "Check Icon",
-                    tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = if (isDone) 1f else 0.0f),
-                    modifier = Modifier
-                        .size(32.dp)
-                )
-
-                Row(
-                ) {
-                    Text(
-                        "+ $coinCount Coins", fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = if (isDone) 1f else 0.0f)
-                    )
-                }
+//                Text(
+//                    "+ $coinCount Coins", fontSize = 14.sp,
+//                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = if (isDone) 1f else 0.0f)
+//                )
             }
         }
+    }
+}
+
+suspend fun fetchDailyIntake(
+    db: FirebaseFirestore,
+    userId: String,
+    selectedDate: String
+): DailyIntake? {
+    val documentId = "$userId-$selectedDate"
+    val snapshot = db.collection("intakes")
+        .document(documentId)
+        .get()
+        .await()
+
+    return if (snapshot.exists()) {
+        snapshot.toObject<DailyIntake>()
+    } else {
+        null
     }
 }

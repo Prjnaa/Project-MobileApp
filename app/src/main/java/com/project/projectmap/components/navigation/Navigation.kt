@@ -1,7 +1,9 @@
 package com.project.projectmap.components.navigation
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -11,6 +13,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.ListenerRegistration
 import com.project.projectmap.ui.screens.auth.login.LoginScreen
 import com.project.projectmap.ui.screens.auth.register.RegisterScreen
 import com.project.projectmap.ui.screens.badges.BadgesPage
@@ -18,6 +22,9 @@ import com.project.projectmap.ui.screens.calendar.CalendarPage
 import com.project.projectmap.ui.screens.main.MainTrackerScreen
 import com.project.projectmap.ui.screens.main.SetTargetScreen
 import com.project.projectmap.ui.screens.profile.ProfileScreen
+import com.project.projectmap.utilities.getCachedUserId
+import com.project.projectmap.utilities.isSessionExpired
+import com.project.projectmap.utilities.listenToUserDeletion
 
 
 object AppDestinations {
@@ -36,22 +43,36 @@ fun Navigation(
     context: Context
 ) {
     val auth = FirebaseAuth.getInstance()
-    var isLoggedIn by remember { mutableStateOf(false) }
+    val currentUser = auth.currentUser
+    var startDestination by remember { mutableStateOf(AppDestinations.MAIN_ROUTE) }
+    var sessionExpired by remember { mutableStateOf(false) }
+    var userDeletionListener by remember { mutableStateOf<ListenerRegistration?>(null) }
 
-//    val cachedUserId = getCachedUserId(context)
-//    val sessionExpired = isSessionExpired(context)
+    LaunchedEffect(currentUser) {
+        val cachedUserId = getCachedUserId(context)
+        sessionExpired = isSessionExpired(context)
 
-//    LaunchedEffect(cachedUserId) {
-//        if (!sessionExpired && cachedUserId != null) {
-//            val currentUser = auth.getUser(cachedUserId)
-//            isLoggedIn = currentUser != null
-//        }
-//    }
+        Log.d("NavigationTod", "Cached User ID: ${getCachedUserId(context)}")
+        Log.d("NavigationTod", "Session Expired: $sessionExpired")
+        Log.d("NavigationTod", "Current User: $currentUser")
 
-    val startDestination = if (isLoggedIn) {
-        AppDestinations.MAIN_ROUTE
-    } else {
-        AppDestinations.LOGIN_ROUTE
+
+        if (cachedUserId != null) {
+            userDeletionListener?.remove()
+            userDeletionListener = listenToUserDeletion(cachedUserId) {
+                FirebaseAuth.getInstance().signOut()
+                clearCachedUserData(context)
+                startDestination = AppDestinations.LOGIN_ROUTE
+            }
+
+            startDestination = when {
+                sessionExpired -> AppDestinations.LOGIN_ROUTE
+                currentUser != null -> AppDestinations.MAIN_ROUTE
+                else -> AppDestinations.LOGIN_ROUTE
+            }
+        } else {
+            startDestination = AppDestinations.LOGIN_ROUTE
+        }
     }
 
     NavHost(
@@ -75,6 +96,12 @@ fun Navigation(
                 },
                 onNavigateToRegister = {
                     navController.navigate(AppDestinations.REGISTER_ROUTE) {
+                        popUpTo(AppDestinations.LOGIN_ROUTE) { inclusive = true }
+                    }
+                },
+                onTargetNotFound = {
+                    Log.d("LoginScreen", "Navigating to New Target Screen")
+                    navController.navigate(AppDestinations.NEW_TARGET_ROUTE) {
                         popUpTo(AppDestinations.LOGIN_ROUTE) { inclusive = true }
                     }
                 }
@@ -166,7 +193,7 @@ fun Navigation(
                 },
                 onLogout = {
                     FirebaseAuth.getInstance().signOut()
-//                    clearCachedUserData(context)
+                    clearCachedUserData(context)
                     navController.navigate(AppDestinations.LOGIN_ROUTE) {
                         popUpTo(0) { inclusive = true }
                     }
@@ -176,18 +203,12 @@ fun Navigation(
     }
 }
 
-//fun checkAndHandleLoggedOutState(context: Context) {
-//    val auth = FirebaseAuth.getInstance()
-//    val cachedUserId = getCachedUserId(context)
-//
-//    if (cachedUserId != null && auth.getUser(cachedUserId) == null) {
-//        // User no longer exists in Firebase
-//
-//        FirebaseAuth.getInstance().signOut()
-//        clearCachedUserData(context) // Clear cached user data
-//    }
-//}
-//
-//fun FirebaseAuth.getUser(userId: String): FirebaseUser? {
-//    return this.getUser(userId)
-//}
+fun clearCachedUserData(context: Context) {
+    val sharedPreferences = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+    sharedPreferences.edit().clear().apply()
+}
+
+
+fun FirebaseAuth.getUser(userId: String): FirebaseUser? {
+    return this.getUser(userId)
+}

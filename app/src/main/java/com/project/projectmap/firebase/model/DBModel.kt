@@ -33,11 +33,11 @@ data class FoodItem(
     val protein: Float = 0f,
     val fat: Float = 0f,
     val carbs: Float = 0f,
-    val type: ItemType
+    val plusCoins: Int = 0
+//    val type: ItemType
 )
 
 enum class ItemType {
     Food,
     Drink
 }
-

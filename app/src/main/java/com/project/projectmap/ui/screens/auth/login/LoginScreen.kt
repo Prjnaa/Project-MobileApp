@@ -1,17 +1,38 @@
 package com.project.projectmap.ui.screens.auth.login
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,17 +47,21 @@ import androidx.compose.ui.unit.sp
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
-import com.google.firebase.auth.*
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
 import com.project.projectmap.BuildConfig
 import com.project.projectmap.R
 import com.project.projectmap.components.msc.ConstantsStyle
 import com.project.projectmap.components.msc.PasswordInput
 import com.project.projectmap.firebase.model.Profile
+import com.project.projectmap.utilities.saveLoginInfo
 
 @Composable
 fun LoginScreen(
     onLoginSuccess: (Boolean) -> Unit = {},
+    onTargetNotFound: () -> Unit = {},
     onNavigateToRegister: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
@@ -66,15 +91,16 @@ fun LoginScreen(
                     data = data,
                     auth = auth,
                     db = db,
+                    onTargetNotFound = onTargetNotFound,
                     onLoginSuccess = onLoginSuccess,
-                    onErrorMessage = { errorMessage = it }
+                    onErrorMessage = { errorMessage = it },
+                    context = context
                 )
             }
         } else {
             errorMessage = "Google Sign-In cancelled"
         }
     }
-
 
     Column(
         modifier = Modifier
@@ -141,16 +167,17 @@ fun LoginScreen(
                     auth = auth,
                     db = db,
                     email = email,
+                    onTargetNotFound = onTargetNotFound,
                     password = password,
                     setIsLoading = { isLoading = it },
                     onLoginSuccess = onLoginSuccess,
-                    onErrorMessage = { errorMessage = it }
+                    onErrorMessage = { errorMessage = it },
+                    context = context
                 )
             },
             onGoogleLoginClick = { launcher.launch(googleSignInClient.signInIntent) },
             onNavigateToRegister = onNavigateToRegister
         )
-
     }
 }
 
@@ -266,8 +293,10 @@ private fun handleGoogleSignInResult(
     data: Intent,
     auth: FirebaseAuth,
     db: FirebaseFirestore,
+    onTargetNotFound: () -> Unit,
     onLoginSuccess: (Boolean) -> Unit,
-    onErrorMessage: (String) -> Unit
+    onErrorMessage: (String) -> Unit,
+    context: Context
 ) {
     try {
         val account =
@@ -282,7 +311,15 @@ private fun handleGoogleSignInResult(
             .addOnCompleteListener { authTask ->
                 if (authTask.isSuccessful) {
                     auth.currentUser?.let { user ->
-                        handleUserLogin(db, user, onLoginSuccess, onErrorMessage, setIsLoading = { false })
+                        handleUserLogin(
+                            db,
+                            user,
+                            onTargetNotFound = onTargetNotFound,
+                            onLoginSuccess = onLoginSuccess,
+                            onErrorMessage = onErrorMessage,
+                            setIsLoading = { false },
+                            context = context
+                        )
                     }
                 } else {
                     onErrorMessage("Authentication failed: ${authTask.exception?.message}")
@@ -293,63 +330,79 @@ private fun handleGoogleSignInResult(
     }
 }
 
-
 private fun handleEmailPasswordLogin(
     auth: FirebaseAuth,
     db: FirebaseFirestore,
     email: String,
     password: String,
+    onTargetNotFound: () -> Unit,
     setIsLoading: (Boolean) -> Unit,
     onLoginSuccess: (Boolean) -> Unit,
-    onErrorMessage: (String) -> Unit
+    onErrorMessage: (String) -> Unit,
+    context: Context
 ) {
-    if (email.isBlank() || password.isBlank()) {
-        onErrorMessage("Email and Password cannot be empty")
+    if (email.isEmpty() || password.isEmpty()) {
+        onErrorMessage("Please fill in both email and password")
         return
     }
 
     setIsLoading(true)
-
     auth.signInWithEmailAndPassword(email, password)
         .addOnCompleteListener { task ->
+            setIsLoading(false)
             if (task.isSuccessful) {
                 auth.currentUser?.let { user ->
-                    handleUserLogin(db, user, onLoginSuccess, onErrorMessage, setIsLoading = setIsLoading)
+                    handleUserLogin(
+                        db,
+                        user,
+                        onTargetNotFound = onTargetNotFound,
+                        onLoginSuccess = onLoginSuccess,
+                        onErrorMessage = onErrorMessage,
+                        setIsLoading = setIsLoading,
+                        context = context
+                    )
                 }
             } else {
-                setIsLoading(false)
                 onErrorMessage("Login failed: ${task.exception?.message}")
             }
         }
 }
 
-
 private fun handleUserLogin(
     db: FirebaseFirestore,
     user: FirebaseUser,
+    onTargetNotFound: () -> Unit,
     onLoginSuccess: (Boolean) -> Unit,
     onErrorMessage: (String) -> Unit,
-    setIsLoading: (Boolean) -> Unit
+    setIsLoading: (Boolean) -> Unit,
+    context: Context
 ) {
     db.collection("users")
         .document(user.uid)
         .get()
         .addOnSuccessListener { document ->
-            val isNewUser = !document.exists()
-            if (isNewUser) saveNewUserProfile(db, user)
-            setIsLoading(false)
-            onLoginSuccess(isNewUser)
+            if (document.exists()) {
+                val userData = document.data
+                if (userData?.containsKey("targets") == true) {
+                    saveLoginInfo(context, user.uid)
+                    onLoginSuccess(false)
+                } else {
+                    onTargetNotFound()
+                }
+            } else {
+                saveNewUserProfile(db, user)
+                onLoginSuccess(true)
+            }
         }
         .addOnFailureListener {
-            setIsLoading(false)
-            onErrorMessage("Error checking user data")
+            onErrorMessage("Failed to fetch user data")
         }
 }
 
 private fun saveNewUserProfile(db: FirebaseFirestore, user: FirebaseUser) {
     val profile = Profile(
-        name = user.displayName ?: "Anonymous",
-        email = user.email ?: "No Email",
+        name = user.displayName ?: "user",
+        email = user.email ?: "not set"
     )
     db.collection("users").document(user.uid).set(profile)
 }

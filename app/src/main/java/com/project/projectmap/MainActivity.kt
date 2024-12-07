@@ -10,7 +10,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.google.firebase.FirebaseApp
 import com.project.projectmap.components.navigation.Navigation
-import com.project.projectmap.components.navigation.checkAndHandleLoggedOutState
 import com.project.projectmap.ui.theme.ProjectmapTheme
 
 class MainActivity : ComponentActivity() {
@@ -19,7 +18,6 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         FirebaseApp.initializeApp(this)
-//        checkAndHandleLoggedOutState(this)
 
         setContent {
             ProjectmapTheme {
@@ -28,9 +26,6 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     Navigation(context = this)
-//                    LoginScreen()
-//                    MainTrackerScreen()
-
                 }
             }
         }

@@ -1,35 +1,34 @@
 [versions]
-activityComposeVersion = "1.7.2"
-agp = "8.7.2"
+agp = "8.6.1"
 firebaseAuthKtx = "23.1.0"
-firebaseBom = "33.4.0"
-firebaseFirestoreKtxVersion = "24.8.1"
+firebaseBom = "33.7.0"
+firebaseFirestoreKtxVersion = "25.1.1"
 kotlin = "1.9.0"
-coreKtx = "1.13.1"
+coreKtx = "1.15.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 kotlinxCoroutinesPlayServices = "1.7.3"
-lifecycleRuntimeKtx = "2.8.6"
-activityCompose = "1.9.2"
-composeBom = "2024.04.01"
-camerax = "1.5.0-alpha02"
+lifecycleRuntimeKtx = "2.8.7"
+activityCompose = "1.9.3"
+composeBom = "2024.11.00"
+camerax = "1.5.0-alpha03"
 googleGmsGoogleServices = "4.4.2"
-firebaseAuth = "23.0.0"
-lifecycleRuntimeKtxVersion = "2.6.1"
-material3 = "1.3.1"
-navigationCompose = "2.8.2"
+firebaseAuth = "23.1.0"
+litertGpu = "1.0.1"
+litertGpuApi = "1.0.1"
+litertMetadata = "1.0.1"
+litertSupport = "1.0.1"
+litertSupportApi = "1.0.1"
+navigationCompose = "2.8.4"
 playServicesAuth = "21.2.0"
 firebaseFirestoreKtx = "25.1.1"
-playServicesBase = "{{latest-version}}"
-ui = "1.7.5"
-uiToolingPreview = "1.7.5"
-
+playServicesAuthVersion = "21.2.0"
+playServicesBase = "18.5.0" # Menetapkan versi stabil terbaru
+litert = "1.0.1"
 
 [libraries]
-androidx-activity-compose-v172 = { module = "androidx.activity:activity-compose", version.ref = "activityComposeVersion" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
-androidx-lifecycle-runtime-ktx-v261 = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtxVersion" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 firebase-auth-ktx = { module = "com.google.firebase:firebase-auth-ktx", version.ref = "firebaseAuthKtx" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
@@ -55,14 +54,18 @@ androidx-camera-mlkit-vision = { module = "androidx.camera:camera-mlkit-vision",
 androidx-camera-extensions = { module = "androidx.camera:camera-extensions", version.ref = "camerax" }
 firebase-auth = { group = "com.google.firebase", name = "firebase-auth", version.ref = "firebaseAuth" }
 kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "kotlinxCoroutinesPlayServices" }
-material3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
+litert-gpu = { module = "com.google.ai.edge.litert:litert-gpu", version.ref = "litertGpu" }
+litert-gpu-api = { module = "com.google.ai.edge.litert:litert-gpu-api", version.ref = "litertGpuApi" }
+litert-metadata = { module = "com.google.ai.edge.litert:litert-metadata", version.ref = "litertMetadata" }
+litert-support = { module = "com.google.ai.edge.litert:litert-support", version.ref = "litertSupport" }
+litert-support-api = { module = "com.google.ai.edge.litert:litert-support-api", version.ref = "litertSupportApi" }
 play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
 firebase-firestore-ktx = { group = "com.google.firebase", name = "firebase-firestore-ktx", version.ref = "firebaseFirestoreKtx" }
+play-services-auth-v2010 = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuthVersion" }
 play-services-base = { module = "com.google.android.gms:play-services-base", version.ref = "playServicesBase" }
-ui = { module = "androidx.compose.ui:ui", version.ref = "ui" }
-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "uiToolingPreview" }
+litert = { group = "com.google.ai.edge.litert", name = "litert", version.ref = "litert" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 google-gms-google-services = { id = "com.google.gms.google-services", version.ref = "googleGmsGoogleServices" }
-
