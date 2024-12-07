@@ -12,32 +12,65 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = DarkColors.Primary,
+    onPrimary = DarkColors.OnPrimary,
+    primaryContainer = DarkColors.PrimaryContainer,
+    onPrimaryContainer = DarkColors.OnPrimaryContainer,
+
+    secondary = DarkColors.Secondary,
+    onSecondary = DarkColors.OnSecondary,
+    secondaryContainer = DarkColors.SecondaryContainer,
+    onSecondaryContainer = DarkColors.OnSecondaryContainer,
+
+    tertiary = DarkColors.Tertiary,
+    onTertiary = DarkColors.OnTertiary,
+    tertiaryContainer = DarkColors.TertiaryContainer,
+    onTertiaryContainer = DarkColors.OnTertiaryContainer,
+
+    background = DarkColors.Background,
+    onBackground = DarkColors.OnBackground,
+    surface = DarkColors.Surface,
+    onSurface = DarkColors.OnSurface,
+
+    surfaceVariant = DarkColors.SurfaceVariant,
+    onSurfaceVariant = DarkColors.OnSurfaceVariant,
+    outline = DarkColors.Outline,
+
+    error = StatusColors.Error,
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = LightColors.Primary,
+    onPrimary = LightColors.OnPrimary,
+    primaryContainer = LightColors.PrimaryContainer,
+    onPrimaryContainer = LightColors.OnPrimaryContainer,
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    secondary = LightColors.Secondary,
+    onSecondary = LightColors.OnSecondary,
+    secondaryContainer = LightColors.SecondaryContainer,
+    onSecondaryContainer = LightColors.OnSecondaryContainer,
+
+    tertiary = LightColors.Tertiary,
+    onTertiary = LightColors.OnTertiary,
+    tertiaryContainer = LightColors.TertiaryContainer,
+    onTertiaryContainer = LightColors.OnTertiaryContainer,
+
+    background = LightColors.Background,
+    onBackground = LightColors.OnBackground,
+    surface = LightColors.Surface,
+    onSurface = LightColors.OnSurface,
+
+    surfaceVariant = LightColors.SurfaceVariant,
+    onSurfaceVariant = LightColors.OnSurfaceVariant,
+    outline = LightColors.Outline,
+
+    error = StatusColors.Error,
 )
 
 @Composable
 fun ProjectmapTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -45,7 +78,6 @@ fun ProjectmapTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }

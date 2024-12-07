@@ -1,34 +1,17 @@
 package com.project.projectmap.ui.screens.auth.login
 
 import android.app.Activity
+import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -36,22 +19,25 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.*
-import com.project.projectmap.buildconfig.BuildConfig
 import com.google.firebase.firestore.FirebaseFirestore
+import com.project.projectmap.BuildConfig
 import com.project.projectmap.R
-import com.project.projectmap.ui.theme.*
+import com.project.projectmap.components.msc.ConstantsStyle
+import com.project.projectmap.components.msc.PasswordInput
+import com.project.projectmap.firebase.model.Profile
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: (Boolean) -> Unit,
-    onRegisterClick: () -> Unit
+    onLoginSuccess: (Boolean) -> Unit = {},
+    onNavigateToRegister: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -62,320 +48,308 @@ fun LoginScreen(
     val db = FirebaseFirestore.getInstance()
     val context = LocalContext.current
 
-    // Google Sign-In configuration
-    val token = BuildConfig.GOOGLE_API_TOKEN
-    val gso = remember {
+    val googleSignInOptions = remember {
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(token)
+            .requestIdToken(BuildConfig.GOOGLE_API_TOKEN)
             .requestEmail()
             .build()
     }
 
-    val googleSignInClient = remember {
-        GoogleSignIn.getClient(context, gso)
-    }
+    val googleSignInClient = remember { GoogleSignIn.getClient(context, googleSignInOptions) }
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-            try {
-                val account = task.getResult(ApiException::class.java)
-                account?.idToken?.let { idToken ->
-                    isLoading = true
-                    val credential = GoogleAuthProvider.getCredential(idToken, null)
-                    auth.signInWithCredential(credential)
-                        .addOnCompleteListener { authTask ->
-                            if (authTask.isSuccessful) {
-                                val user = auth.currentUser
-                                user?.let { firebaseUser ->
-                                    // Check if user has already set target
-                                    db.collection("userTargets")
-                                        .document(firebaseUser.uid)
-                                        .get()
-                                        .addOnSuccessListener { document ->
-                                            isLoading = false
-                                            val isNewUser = !document.exists()
-                                            onLoginSuccess(isNewUser)
-                                        }
-                                        .addOnFailureListener {
-                                            isLoading = false
-                                            errorMessage = "Error checking user data"
-                                        }
-                                }
-                            } else {
-                                isLoading = false
-                                handleFirebaseException(authTask.exception) { message ->
-                                    errorMessage = message
-                                }
-                            }
-                        }
-                } ?: run {
-                    isLoading = false
-                    errorMessage = "Google Sign-In failed: ID token is null"
-                }
-            } catch (e: ApiException) {
-                isLoading = false
-                errorMessage = "Google Sign-In error: ${e.message}"
+            result.data?.let { data ->
+                handleGoogleSignInResult(
+                    data = data,
+                    auth = auth,
+                    db = db,
+                    onLoginSuccess = onLoginSuccess,
+                    onErrorMessage = { errorMessage = it }
+                )
             }
         } else {
-            isLoading = false
             errorMessage = "Google Sign-In cancelled"
         }
     }
 
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.Start
+            .padding(ConstantsStyle.APP_PADDING_VAL),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.Top)
     ) {
-        Spacer(modifier = Modifier.height(80.dp))
-
         // Welcome Text
-        Text(
-            text = "Welcome back! Let's\nlog in to your account",
-            style = TextStyle(
-                fontSize = 28.sp,
+        Row(
+            modifier = Modifier
+                .fillMaxHeight(0.25f)
+                .offset(y = 16.dp)
+        ) {
+            Text(
+                text = "Welcome back! Let's log in to your account",
+                style = TextStyle(lineHeight = 46.sp),
+                fontSize = 42.sp,
                 fontWeight = FontWeight.Bold,
-                color = Purple80
-            ),
-            lineHeight = 34.sp
-        )
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Start,
+            )
+        }
 
-        Spacer(modifier = Modifier.height(48.dp))
-
-        // Email Field
-        Text(
-            text = "Email",
-            style = TextStyle(
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
-            ),
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
+        // Email Input
         OutlinedTextField(
             value = email,
-            onValueChange = { email = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(12.dp),
-            placeholder = { Text("Enter your email", color = PurpleGrey40) },
-            colors = OutlinedTextFieldDefaults.colors(
-                unfocusedBorderColor = PurpleGrey80,
-                focusedBorderColor = Purple40
-            ),
-            singleLine = true,
-            enabled = !isLoading
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Password Field
-        Text(
-            text = "Password",
-            style = TextStyle(
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
-            ),
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(12.dp),
-            visualTransformation = PasswordVisualTransformation(),
-            placeholder = { Text("Enter your password", color = PurpleGrey40) },
-            colors = OutlinedTextFieldDefaults.colors(
-                unfocusedBorderColor = PurpleGrey80,
-                focusedBorderColor = Purple40
-            ),
-            singleLine = true,
-            enabled = !isLoading
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Login Button
-        Button(
-            onClick = {
-                if (email.isEmpty() || password.isEmpty()) {
-                    errorMessage = "Email and Password cannot be empty"
-                } else {
-                    isLoading = true
-                    auth.signInWithEmailAndPassword(email, password)
-                        .addOnCompleteListener { task ->
-                            if (task.isSuccessful) {
-                                val user = auth.currentUser
-                                user?.let { firebaseUser ->
-                                    // Check if user has already set target
-                                    db.collection("userTargets")
-                                        .document(firebaseUser.uid)
-                                        .get()
-                                        .addOnSuccessListener { document ->
-                                            isLoading = false
-                                            val isNewUser = !document.exists()
-                                            onLoginSuccess(isNewUser)
-                                        }
-                                        .addOnFailureListener {
-                                            isLoading = false
-                                            errorMessage = "Error checking user data"
-                                        }
-                                }
-                            } else {
-                                isLoading = false
-                                handleFirebaseException(task.exception) { message ->
-                                    errorMessage = message
-                                }
-                            }
-                        }
-                }
+            onValueChange = {
+                email = it
+                errorMessage = null
             },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Purple80),
-            enabled = !isLoading
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = Purple40
-                )
-            } else {
-                Text(
-                    "Login",
-                    style = TextStyle(
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Purple40
-                    )
-                )
-            }
-        }
+            label = { Text("Email") },
+            shape = RoundedCornerShape(ConstantsStyle.ROUNDED_CORNER_VAL),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        // Password Input
+        PasswordInput(
+            password = password,
+            onPasswordChange = {
+                password = it
+                errorMessage = null
+            },
+            modifier = Modifier.fillMaxWidth()
+        )
 
         // Error Message
         errorMessage?.let {
-            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = it,
                 color = MaterialTheme.colorScheme.error,
-                style = TextStyle(fontSize = 14.sp)
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(0.8f)
             )
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Or Login with Divider
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            HorizontalDivider(
-                modifier = Modifier.weight(1f),
-                color = PurpleGrey80,
-                thickness = 1.dp
-            )
-            Text(
-                text = "Or Login with",
-                modifier = Modifier.padding(horizontal = 16.dp),
-                style = TextStyle(
-                    fontSize = 14.sp,
-                    color = PurpleGrey40
+        // Buttons and Links
+        LoginButtons(
+            email = email,
+            password = password,
+            isLoading = isLoading,
+            onLoginClick = {
+                handleEmailPasswordLogin(
+                    auth = auth,
+                    db = db,
+                    email = email,
+                    password = password,
+                    setIsLoading = { isLoading = it },
+                    onLoginSuccess = onLoginSuccess,
+                    onErrorMessage = { errorMessage = it }
                 )
-            )
-            HorizontalDivider(
-                modifier = Modifier.weight(1f),
-                color = PurpleGrey80,
-                thickness = 1.dp
-            )
-        }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Google Sign In Button
-        OutlinedButton(
-            onClick = {
-                if (!isLoading) {
-                    launcher.launch(googleSignInClient.signInIntent)
-                }
             },
+            onGoogleLoginClick = { launcher.launch(googleSignInClient.signInIntent) },
+            onNavigateToRegister = onNavigateToRegister
+        )
+
+    }
+}
+
+@Composable
+private fun LoginButtons(
+    email: String,
+    password: String,
+    isLoading: Boolean,
+    onLoginClick: () -> Unit,
+    onGoogleLoginClick: () -> Unit,
+    onNavigateToRegister: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(20.dp)
+    ) {
+        // Login Button
+        Button(
+            onClick = onLoginClick,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ),
             modifier = Modifier
-                .size(width = 120.dp, height = 60.dp)
-                .align(Alignment.CenterHorizontally),
-            shape = RoundedCornerShape(12.dp),
-            border = ButtonDefaults.outlinedButtonBorder,
-            enabled = !isLoading
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = RoundedCornerShape(ConstantsStyle.ROUNDED_CORNER_VAL)
         ) {
             if (isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(24.dp),
-                    color = Purple40
+                    color = MaterialTheme.colorScheme.onPrimary
                 )
             } else {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_google),
-                    contentDescription = "Google Sign In",
-                    tint = Color.Unspecified,
-                    modifier = Modifier.size(24.dp)
-                )
+                Text("Login", fontSize = 16.sp)
             }
         }
 
-        Spacer(modifier = Modifier.weight(1f))
-
         // Register Link
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 32.dp),
-            horizontalArrangement = Arrangement.Center
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.offset(y = (-12).dp)
         ) {
             Text(
-                "Don't have an account? ",
-                style = TextStyle(
-                    fontSize = 14.sp,
-                    color = Color.Black
-                )
+                text = "Don’t have an account?",
+                color = MaterialTheme.colorScheme.tertiary,
+                modifier = Modifier.padding(top = 16.dp),
+                textAlign = TextAlign.Center
             )
             Text(
-                "Register Now",
-                modifier = Modifier.clickable(
-                    enabled = !isLoading,
-                    onClick = onRegisterClick
-                ),
-                style = TextStyle(
-                    fontSize = 14.sp,
-                    color = PurpleGrey40,
-                    fontWeight = FontWeight.SemiBold
-                )
+                text = "Register",
+                textDecoration = TextDecoration.Underline,
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .padding(top = 16.dp)
+                    .clickable { onNavigateToRegister() }
             )
+        }
+
+        Row(
+            modifier = Modifier
+                .padding(vertical = 16.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Divider(
+                color = MaterialTheme.colorScheme.onBackground.copy(0.25f),
+                modifier = Modifier
+                    .fillMaxWidth(1f)
+                    .weight(0.425f)
+            )
+            Text(
+                text = "OR",
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onBackground.copy(0.4f),
+                modifier = Modifier
+                    .weight(0.15f)
+            )
+            Divider(
+                color = MaterialTheme.colorScheme.onBackground.copy(0.25f),
+                modifier = Modifier
+                    .fillMaxWidth(1f)
+                    .weight(0.425f)
+            )
+        }
+
+        // Google Login Button
+        Button(
+            onClick = onGoogleLoginClick,
+            colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(1.dp, Color.Gray.copy(0.75f)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.ic_google),
+                contentDescription = "Google Icon",
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Login with Google", color = Color.Black, fontSize = 16.sp)
         }
     }
 }
 
-private fun handleFirebaseException(exception: Exception?, onErrorMessage: (String) -> Unit) {
-    val message = when (exception) {
-        is FirebaseAuthInvalidCredentialsException ->
-            "Invalid credentials. Please check your email or password."
-        is FirebaseAuthInvalidUserException ->
-            "No account found with this email."
-        is FirebaseAuthUserCollisionException ->
-            "This email is already associated with another account."
-        is FirebaseAuthException -> {
-            if (exception.errorCode == "ERROR_TOO_MANY_REQUESTS")
-                "Unusual activity detected. Please try again later."
-            else
-                exception.message ?: "Authentication failed."
+private fun handleGoogleSignInResult(
+    data: Intent,
+    auth: FirebaseAuth,
+    db: FirebaseFirestore,
+    onLoginSuccess: (Boolean) -> Unit,
+    onErrorMessage: (String) -> Unit
+) {
+    try {
+        val account =
+            GoogleSignIn.getSignedInAccountFromIntent(data).getResult(ApiException::class.java)
+        val idToken = account?.idToken
+        if (idToken == null) {
+            onErrorMessage("Google Sign-In failed: ID token is null")
+            return
         }
-        else -> exception?.message ?: "Login failed"
+        val credential = GoogleAuthProvider.getCredential(idToken, null)
+        auth.signInWithCredential(credential)
+            .addOnCompleteListener { authTask ->
+                if (authTask.isSuccessful) {
+                    auth.currentUser?.let { user ->
+                        handleUserLogin(db, user, onLoginSuccess, onErrorMessage, setIsLoading = { false })
+                    }
+                } else {
+                    onErrorMessage("Authentication failed: ${authTask.exception?.message}")
+                }
+            }
+    } catch (e: ApiException) {
+        onErrorMessage("Google Sign-In error: ${e.message}")
     }
-    onErrorMessage(message)
+}
+
+
+private fun handleEmailPasswordLogin(
+    auth: FirebaseAuth,
+    db: FirebaseFirestore,
+    email: String,
+    password: String,
+    setIsLoading: (Boolean) -> Unit,
+    onLoginSuccess: (Boolean) -> Unit,
+    onErrorMessage: (String) -> Unit
+) {
+    if (email.isBlank() || password.isBlank()) {
+        onErrorMessage("Email and Password cannot be empty")
+        return
+    }
+
+    setIsLoading(true)
+
+    auth.signInWithEmailAndPassword(email, password)
+        .addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                auth.currentUser?.let { user ->
+                    handleUserLogin(db, user, onLoginSuccess, onErrorMessage, setIsLoading = setIsLoading)
+                }
+            } else {
+                setIsLoading(false)
+                onErrorMessage("Login failed: ${task.exception?.message}")
+            }
+        }
+}
+
+
+private fun handleUserLogin(
+    db: FirebaseFirestore,
+    user: FirebaseUser,
+    onLoginSuccess: (Boolean) -> Unit,
+    onErrorMessage: (String) -> Unit,
+    setIsLoading: (Boolean) -> Unit
+) {
+    db.collection("users")
+        .document(user.uid)
+        .get()
+        .addOnSuccessListener { document ->
+            val isNewUser = !document.exists()
+            if (isNewUser) saveNewUserProfile(db, user)
+            setIsLoading(false)
+            onLoginSuccess(isNewUser)
+        }
+        .addOnFailureListener {
+            setIsLoading(false)
+            onErrorMessage("Error checking user data")
+        }
+}
+
+private fun saveNewUserProfile(db: FirebaseFirestore, user: FirebaseUser) {
+    val profile = Profile(
+        name = user.displayName ?: "Anonymous",
+        email = user.email ?: "No Email",
+    )
+    db.collection("users").document(user.uid).set(profile)
 }

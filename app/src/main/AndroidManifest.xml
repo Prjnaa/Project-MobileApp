@@ -6,6 +6,8 @@
         android:name="android.hardware.camera"
         android:required="false" />
 
+    <uses-feature android:glEsVersion="0x00030000" android:required="true" />
+
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.INTERNET"/>
 
@@ -22,6 +24,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Projectmap">
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -29,7 +32,6 @@
             android:theme="@style/Theme.Projectmap">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -39,6 +41,8 @@
             android:exported="false"
             android:theme="@style/Theme.Projectmap">
         </activity>
+
     </application>
+
 
 </manifest>
