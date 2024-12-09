@@ -7,7 +7,7 @@ plugins {
     alias(libs.plugins.google.gms.google.services)
 }
 
-val secretPropertiesFile = rootProject.file("secrets.properties")
+val secretPropertiesFile = rootProject.file("secret.properties")
 val secretProperties = Properties()
 if (secretPropertiesFile.exists()) {
     secretProperties.load(FileInputStream(secretPropertiesFile))
@@ -17,7 +17,7 @@ if (secretPropertiesFile.exists()) {
 
 android {
     namespace = "com.project.projectmap"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.project.projectmap"
@@ -68,54 +68,49 @@ android {
     }
 }
 
-
-
 dependencies {
-    // Core AndroidX dependencies
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
-    implementation(libs.androidx.lifecycle.runtime.ktx.v261)
-
-    // Jetpack Compose dependencies
     implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.ui)
-    implementation(libs.ui.tooling.preview)
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
+    implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation("androidx.compose.material3:material3:1.3.1")
+    implementation(libs.firebase.auth)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.play.services.auth)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.firebase.firestore.ktx)
 
-    // Debugging and Testing
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation(libs.androidx.ui.tooling)
+    debugImplementation(libs.androidx.ui.test.manifest)
 
-    // Firebase dependencies
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.auth)
-    implementation(libs.firebase.auth.ktx)
-    implementation(libs.firebase.firestore.ktx)
-    implementation(libs.firebase.firestore.ktx.v2481)
-
-    // Google Play Services
-    implementation(libs.play.services.auth)
-    implementation(libs.play.services.base)
-    implementation("com.google.android.gms:play-services-location:21.3.0")
-    implementation(libs.kotlinx.coroutines.play.services)
-
-    // Navigation
-    implementation(libs.androidx.navigation.compose)
-
-    // CameraX dependencies
+    // CameraX Dependencies
     implementation(libs.androidx.camera.core)
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
     implementation(libs.androidx.camera.mlkit.vision)
     implementation(libs.androidx.camera.extensions)
+    implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.play.services.base)
+    implementation(libs.play.services.auth.v2010)
+
+    implementation(libs.litert)
+    implementation(libs.litert.gpu)
+    implementation(libs.litert.support)
+    implementation(libs.litert.metadata)
+    implementation(libs.litert.gpu.api)
+    implementation(libs.litert.support.api)
+
+    // Firebase dependencies
+    implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.firestore.ktx.v2481)
 }

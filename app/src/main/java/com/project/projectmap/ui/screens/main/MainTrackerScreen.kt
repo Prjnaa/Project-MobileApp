@@ -1,5 +1,6 @@
 package com.project.projectmap.ui.screens.main
 
+import android.content.Intent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -35,8 +36,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -44,9 +47,16 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.project.projectmap.R
-import com.project.projectmap.firebase.model.CalorieTrackerViewModel
+import com.project.projectmap.components.msc.ConstantsStyle
+import com.project.projectmap.components.msc.getCurrentDate
+import com.project.projectmap.firebase.model.FoodItem
+import com.project.projectmap.ui.screens.camera.CameraActivity
 import com.project.projectmap.ui.theme.ProjectmapTheme
+import com.project.projectmap.ui.viewModel.MainTrackerViewModel
+import kotlin.math.roundToInt
 import kotlin.random.Random
 
 @Composable
@@ -61,7 +71,7 @@ fun MainTrackerScreenPreview() {
 @Preview(showBackground = true)
 fun ChallengesPreview() {
     ProjectmapTheme(darkTheme = false) {
-        ChallengeList()
+//        HistoryList()
     }
 }
 
@@ -72,25 +82,30 @@ fun MainTrackerScreen(
     onNavigateToBadges: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
     onNavigateToNewTarget: () -> Unit = {},
-    viewModel: CalorieTrackerViewModel = CalorieTrackerViewModel()
+    viewModel: MainTrackerViewModel = MainTrackerViewModel()
 ) {
-    val nutritionData by viewModel.nutritionData.collectAsState()
-    val nutritionTarget by viewModel.nutritionTarget.collectAsState()
+    val user by viewModel.user.collectAsState()
+    val intake by viewModel.dailyIntake.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val items = intake.items.values.toList()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(color = MaterialTheme.colorScheme.background)
-            .padding(start = 16.dp, top = 54.dp, end = 16.dp, bottom = 0.dp)
+            .padding(ConstantsStyle.APP_PADDING_VAL)
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(32.dp)
+        verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        TopBar(
-            onNavToBadges = onNavigateToBadges,
-            onNavToProfile = onNavigateToProfile,
-        )
+
+        user?.let { userInfo ->
+            TopBar(
+                onNavToBadges = onNavigateToBadges,
+                onNavToProfile = onNavigateToProfile,
+                userName = userInfo.profile.name
+            )
+        }
         if (isLoading) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
         } else if (errorMessage != null) {
@@ -100,24 +115,29 @@ fun MainTrackerScreen(
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         } else {
-            nutritionData?.let { data ->
+            intake?.let { data ->
                 CurrentStats(
-                    carbsProgress = data.currentCarbs,
-                    proteinProgress = data.currentProtein,
-                    fatProgress = data.currentFat
+                    carbsProgress = data.totalCarbs,
+                    proteinProgress = data.totalProtein,
+                    fatProgress = data.totalFat,
+                    carbsTarget = user.targets?.carbsTarget ?: 0f,
+                    proteinTarget = user.targets?.proteinTarget ?: 0f,
+                    fatTarget = user.targets?.fatTarget ?: 0f
                 )
             }
-            nutritionTarget?.let { targetData ->
+            user.targets?.let { targetData ->
                 Tracker(
-                    currentCalories = nutritionData.currentCalories,
-                    targetCalories = targetData.totalCalories
+                    currentCalories = intake?.totalCalories?.toInt() ?: 0,
+                    targetCalories = targetData.calorieTarget.toInt(),
+                    onNavToNewTarget = onNavigateToNewTarget
                 )
 
             }
         }
 
-        ChallengeList(
-            onNavToCalendar = onNavigateToCalendar
+        HistoryList(
+            onNavToCalendar = onNavigateToCalendar,
+            items = items
         )
     }
 }
@@ -125,12 +145,13 @@ fun MainTrackerScreen(
 @Composable
 fun TopBar(
     onNavToBadges: () -> Unit = {},
-    onNavToProfile: () -> Unit = {}
+    onNavToProfile: () -> Unit = {},
+    userName: String = "user"
 ) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp),
+            .height(54.dp),
         color = MaterialTheme.colorScheme.primary,
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -157,7 +178,7 @@ fun TopBar(
                     modifier = Modifier.size(36.dp)
                 )
                 Text(
-                    text = "User Name",
+                    text = userName,
                     fontSize = 20.sp,
                     color = MaterialTheme.colorScheme.onPrimary,
                     fontWeight = FontWeight.Medium
@@ -170,29 +191,28 @@ fun TopBar(
                 verticalAlignment = Alignment.CenterVertically
             ) {
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.streak_icon_24),
-                        contentDescription = "Streak Icon",
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(30.dp)
-                    )
-                    Text(
-                        text = "200",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
+//                Row(
+//                    verticalAlignment = Alignment.CenterVertically,
+//                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+//                ) {
+//                    Icon(
+//                        painter = painterResource(id = R.drawable.streak_icon_24),
+//                        contentDescription = "Streak Icon",
+//                        tint = MaterialTheme.colorScheme.onPrimary,
+//                        modifier = Modifier.size(30.dp)
+//                    )
+//                    Text(
+//                        text = "200",
+//                        fontSize = 18.sp,
+//                        fontWeight = FontWeight.Medium
+//                    )
+//                }
 
-
-                VerticalDivider(
-                    thickness = 2.dp,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
-                    modifier = Modifier.padding(vertical = 10.dp)
-                )
+//                VerticalDivider(
+//                    thickness = 2.dp,
+//                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
+//                    modifier = Modifier.padding(vertical = 10.dp)
+//                )
 
 //                NAVIGATE TO BADGES BUTTON
                 Row(
@@ -224,7 +244,10 @@ fun TopBar(
 fun CurrentStats(
     carbsProgress: Float = 0.0f,
     proteinProgress: Float = 0.0f,
-    fatProgress: Float = 0.0f
+    fatProgress: Float = 0.0f,
+    carbsTarget: Float,
+    proteinTarget: Float,
+    fatTarget: Float
 ) {
     Row(
         modifier = Modifier
@@ -233,54 +256,68 @@ fun CurrentStats(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        MacroItem(title = "Carbs", progress = carbsProgress)
-        MacroItem(title = "Protein", progress = proteinProgress)
-        MacroItem(title = "Fat", progress = fatProgress)
+        MacroItem(title = "Carbs", progress = carbsProgress, target = carbsTarget)
+        MacroItem(title = "Protein", progress = proteinProgress, target = proteinTarget)
+        MacroItem(title = "Fat", progress = fatProgress, target = fatTarget)
     }
 }
 
 
 @Composable
 fun Tracker(
-    currentCalories: Int = 999, targetCalories: Int = 9999
+    currentCalories: Int = 999, targetCalories: Int = 9999, onNavToNewTarget: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+
     Column(
         modifier = Modifier
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .offset(y = (-42).dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-//        CHARACTER
         Image(
-            painter = painterResource(id = R.drawable.bunny),
-            contentDescription = "Tracker Illustration",
+            painter = painterResource(id = R.drawable.char_bunny),
+            contentDescription = "Calories Icon",
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 12.dp, bottom = 32.dp)
+                .scale(0.75f)
         )
+//        CHARACTER
+//        ArObjectViewer(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .padding(top = 12.dp, bottom = 32.dp),
+//            modelFilePath = "app/src/main/java/com/project/projectmap/assets/3d/bunny_blend.glb"
+//        )
 
 //        MAIN CALORIE TRACKER
         CalorieTracker(current = currentCalories, target = targetCalories)
 
 //        TRACK EAT BUTTONS
-        TrackEatButton()
+        TrackEatButton(onLaunchCamera = {
+            val intent = Intent(context, CameraActivity::class.java)
+            context.startActivity(intent)  // Launch the CameraActivity
+        })
 
 //        SET NEW TARGET
-        SetNewTargetLink()
+        SetNewTargetLink(onNavToNewTarget = onNavToNewTarget)
     }
 }
 
 @Composable
-fun ChallengeList(
-    onNavToCalendar: () -> Unit = {}
+fun HistoryList(
+    onNavToCalendar: () -> Unit = {},
+    items: List<FoodItem>
 ) {
-    val items = List(20) { index -> "This is challenge number #${index}" } //Sample
+
+    val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(600.dp),
+            .height(600.dp)
+            .offset(y = (-42).dp),
         color = MaterialTheme.colorScheme.primaryContainer,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(ConstantsStyle.ROUNDED_CORNER_MD_VAL),
 
         ) {
         Column(
@@ -295,7 +332,7 @@ fun ChallengeList(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Today's Challenges",
+                    text = "Today's History",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary
@@ -306,7 +343,7 @@ fun ChallengeList(
                         containerColor = Color.Transparent,
                         contentColor = MaterialTheme.colorScheme.primary
                     ),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(ConstantsStyle.ROUNDED_CORNER_SM_VAL),
                     contentPadding = PaddingValues(2.dp)
                 ) {
 //                    CALENDAR NAVIGATE BUTTON
@@ -326,13 +363,20 @@ fun ChallengeList(
                 }
             }
 
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(20.dp)
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                shape = RoundedCornerShape(ConstantsStyle.ROUNDED_CORNER_VAL),
+                color = Color.Transparent
             ) {
-                itemsIndexed(items) { index, item ->
-                    val random = (1..100).random() //Sample
-                    val isDone = Random.nextBoolean() //Sample
-                    ChallengeItem(index = index, text = item, isDone = isDone, coinCount = random)
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                ) {
+                    itemsIndexed(items) { index, item ->
+//                        val random = (1..100).random()
+//                        val isDone = Random.nextBoolean()
+                        val cal = item.calories.roundToInt().toString()
+                        HistoryItem(index = index, title = item.name, text = cal)
+                    }
                 }
             }
         }
@@ -379,6 +423,7 @@ fun CalorieTracker(current: Int, target: Int) {
             modifier = Modifier
                 .offset(y = (-24).dp),
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
                 text = "$current",
@@ -399,10 +444,10 @@ fun CalorieTracker(current: Int, target: Int) {
 
 //TRACK EAT BUTTON
 @Composable
-fun TrackEatButton() {
-    Row(modifier = Modifier.offset(y = (-112).dp), horizontalArrangement = Arrangement.Center) {
+fun TrackEatButton(onLaunchCamera: () -> Unit = {}) {
+    Row(modifier = Modifier.offset(y = (-100).dp), horizontalArrangement = Arrangement.Center) {
         Button(
-            onClick = { /*TODO*/ },
+            onClick = { onLaunchCamera() },
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
@@ -418,7 +463,9 @@ fun TrackEatButton() {
 
 //SET NEW TARGET LINK
 @Composable
-fun SetNewTargetLink() {
+fun SetNewTargetLink(
+    onNavToNewTarget: () -> Unit = {}
+) {
     Text(
         text = "Set New Target",
         fontSize = 16.sp,
@@ -428,15 +475,19 @@ fun SetNewTargetLink() {
         modifier = Modifier
             .padding(top = 16.dp)
             .offset(y = (-72).dp)
-            .clickable { /*TODO: Set New target link*/ }
+            .clickable {
+                onNavToNewTarget()
+            }
 
     )
 }
 
 //MACRO ITEM
 @Composable
-fun MacroItem(title: String, progress: Float) {
-    val constrainedProgress = progress.coerceIn(0f, 1f)
+fun MacroItem(title: String, progress: Float, target: Float) {
+    val constrainedProgress = progress / target
+    val surplus = if (progress > target) progress - target else 0f
+
     Column(
         verticalArrangement = Arrangement.spacedBy(4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -457,17 +508,29 @@ fun MacroItem(title: String, progress: Float) {
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
         )
+        Text(
+            text = "+ $surplus g",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.tertiary.copy(if (surplus > 0) 1f else 0f),
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .background(
+                    color = MaterialTheme.colorScheme.onTertiary.copy(alpha = if (surplus > 0) 1f else 0f),
+                    shape = RoundedCornerShape(ConstantsStyle.ROUNDED_CORNER_SM_VAL)
+                )
+                .padding(vertical = 2.dp, horizontal = 8.dp)
+        )
     }
 }
 
 //CHALLENGE ITEM
 @Composable
-fun ChallengeItem(
+fun HistoryItem(
     index: Int,
     title: String = "Default Title $index",
     text: String,
-    isDone: Boolean,
-    coinCount: Int
+//    coinCount: Int
 ) {
     val capitalizedTitle = title.split(" ").joinToString(" ") { it.capitalize() }
 
@@ -475,12 +538,12 @@ fun ChallengeItem(
         modifier = Modifier
             .fillMaxWidth(),  // Ensure it fills the width
         color = MaterialTheme.colorScheme.primary,
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(ConstantsStyle.ROUNDED_CORNER_VAL)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),  // Add padding to the Row
-            horizontalArrangement = Arrangement.SpaceBetween,  // Space out content
-            verticalAlignment = Alignment.Top // Center align vertically
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top
         ) {
             Column(
                 modifier = Modifier
@@ -494,32 +557,70 @@ fun ChallengeItem(
                     modifier = Modifier.padding(end = 8.dp)
                 )
                 Text(
-                    text = text,
+                    text = "$text Calories",
                     fontSize = 16.sp,
                 )
             }
-
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.Bottom)
-            ) {
-
-                Icon(
-                    painter = painterResource(R.drawable.check_circle_24),
-                    contentDescription = "Check Icon",
-                    tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = if (isDone) 1f else 0.0f),
-                    modifier = Modifier
-                        .size(32.dp)
-                )
-
-                Row(
-                ) {
-                    Text(
-                        "+ $coinCount Coins", fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = if (isDone) 1f else 0.0f)
-                    )
-                }
-            }
+//            Column(
+//                horizontalAlignment = Alignment.End,
+//                verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.Bottom)
+//            ) {
+//
+//                Row(
+//                ) {
+//                    Text(
+//                        "+ $coinCount Coins", fontSize = 14.sp,
+//                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = if (isDone) 1f else 0.0f)
+//                    )
+//                }
+//            }
         }
     }
 }
+
+
+////3D VIEW
+//@Composable
+//fun ArObjectViewer(
+//    modifier: Modifier = Modifier,
+//    modelFilePath: String
+//) {
+//    AndroidView(
+//        modifier = modifier,
+//        factory = { context ->
+//            ArSceneView(context).apply {
+//                // Initialize ARCore scene
+//                scene.addOnUpdateListener {
+//                    // Load the 3D model
+//                    ModelRenderable.builder()
+//                        .setSource(context, Uri.parse(modelFilePath))
+//                        .build()
+//                        .thenAccept { modelRenderable ->
+//                            // Create an AnchorNode
+//                            val anchorNode = AnchorNode().apply {
+//                                setParent(scene)
+//                            }
+//
+//                            // Get the TransformationSystem from an ArFragment
+//                            val arFragment = (context as FragmentActivity).supportFragmentManager
+//                                .findFragmentById(R.id.arFragment) as ArFragment
+//
+//                            val transformableNode =
+//                                TransformableNode(arFragment.transformationSystem).apply {
+//                                    renderable = modelRenderable
+//                                    setParent(anchorNode)
+//                                }
+//
+//                            // Add nodes to the scene
+//                            scene.addChild(anchorNode)
+//                            transformableNode.select()
+//                        }
+//                        .exceptionally {
+//                            Log.e("ArObjectViewer", "Error loading model: ${it.message}")
+//                            null
+//                        }
+//                }
+//            }
+//        }
+//    )
+//}
