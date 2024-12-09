@@ -113,14 +113,4 @@ dependencies {
     // Firebase dependencies
     implementation(libs.firebase.auth.ktx)
     implementation(libs.firebase.firestore.ktx.v2481)
-//
-//    implementation("com.google.ar:core:1.15.0") {
-//        exclude(group = "com.android.support", module = "support-compat")
-//    }
-//    implementation("com.google.ar.sceneform.ux:sceneform-ux:1.15.0") {
-//        exclude(group = "com.android.support", module = "support-compat")
-//    }
-//    implementation("com.google.ar.sceneform:core:1.15.0") {
-//        exclude(group = "com.android.support", module = "support-compat")
-//    }
 }
