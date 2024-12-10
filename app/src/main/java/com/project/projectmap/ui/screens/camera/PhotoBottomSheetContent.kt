@@ -53,9 +53,9 @@ fun PhotoBottomSheetContent(
         }
     }
 
-    var fat by remember { mutableStateOf(1.9f) }
-    var carbohydrate by remember { mutableStateOf(5.8f) }
-    var protein by remember { mutableStateOf(4.1f) }
+    var fat by remember { mutableStateOf(0f) }
+    var carbohydrate by remember { mutableStateOf(0f) }
+    var protein by remember { mutableStateOf(0f) }
     var foodNameState by remember { mutableStateOf(formattedFoodName) }
     var isEditable by remember { mutableStateOf(false) }
 

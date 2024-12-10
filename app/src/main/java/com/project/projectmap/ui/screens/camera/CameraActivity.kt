@@ -110,13 +110,13 @@ class CameraActivity : ComponentActivity() {
                                             showBottomSheet = true
 
                                             // Tampilkan hasil prediksi
-                                            runOnUiThread {
-                                                Toast.makeText(
-                                                    this@CameraActivity,
-                                                    "Predicted: $prediction",
-                                                    Toast.LENGTH_LONG
-                                                ).show()
-                                            }
+//                                            runOnUiThread {
+//                                                Toast.makeText(
+//                                                    this@CameraActivity,
+//                                                    "Predicted: $prediction",
+//                                                    Toast.LENGTH_LONG
+//                                                ).show()
+//                                            }
                                         }
                                     } else {
                                         runOnUiThread {

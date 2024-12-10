@@ -1,6 +1,7 @@
 package com.project.projectmap.ui.screens.main
 
 import android.content.Intent
+import android.icu.text.DecimalFormat
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -486,7 +487,10 @@ fun SetNewTargetLink(
 @Composable
 fun MacroItem(title: String, progress: Float, target: Float) {
     val constrainedProgress = progress / target
+    val decimalFormat = DecimalFormat("#.#")
     val surplus = if (progress > target) progress - target else 0f
+    val formattedSurplus = decimalFormat.format(surplus)
+
 
     Column(
         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -509,7 +513,7 @@ fun MacroItem(title: String, progress: Float, target: Float) {
                 .align(Alignment.CenterHorizontally)
         )
         Text(
-            text = "+ $surplus g",
+            text = "+ $formattedSurplus g",
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.tertiary.copy(if (surplus > 0) 1f else 0f),

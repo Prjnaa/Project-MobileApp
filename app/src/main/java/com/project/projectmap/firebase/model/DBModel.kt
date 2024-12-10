@@ -10,6 +10,14 @@ data class User(
 data class Profile(
     val name: String = "",
     val email: String = "",
+
+    val age: Int = 0,
+    val gender: Gender = Gender.Male,
+    val coin: Int = 0,
+
+    val reminderInterval: Int = 5 * 60 * 60 * 1000,
+
+    val photoUrl: String = ""
 )
 
 data class UserTargets(
@@ -34,10 +42,9 @@ data class FoodItem(
     val fat: Float = 0f,
     val carbs: Float = 0f,
     val plusCoins: Int = 0
-//    val type: ItemType
 )
 
-enum class ItemType {
-    Food,
-    Drink
+enum class Gender {
+    Male,
+    Female
 }
