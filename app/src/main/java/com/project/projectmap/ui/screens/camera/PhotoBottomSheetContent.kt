@@ -224,6 +224,7 @@ fun PhotoBottomSheetContent(
                         protein = protein,
                         fat = fat,
                         carbs = carbohydrate,
+                        timestamp = System.currentTimeMillis()
                     )
 
                     val batch = db.batch()
