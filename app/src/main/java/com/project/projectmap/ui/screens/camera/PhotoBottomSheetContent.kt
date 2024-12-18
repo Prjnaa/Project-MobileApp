@@ -53,14 +53,29 @@ fun PhotoBottomSheetContent(
         }
     }
 
+    // Add base values to store original API values (per 100g)
+    var baseFat by remember { mutableStateOf(0f) }
+    var baseCarbohydrate by remember { mutableStateOf(0f) }
+    var baseProtein by remember { mutableStateOf(0f) }
+
+    // Values that will be displayed and adjusted by serving size
     var fat by remember { mutableStateOf(0f) }
     var carbohydrate by remember { mutableStateOf(0f) }
     var protein by remember { mutableStateOf(0f) }
+    var servingSize by remember { mutableStateOf(100f) }
     var foodNameState by remember { mutableStateOf(formattedFoodName) }
     var isEditable by remember { mutableStateOf(false) }
 
     val calories = remember(fat, carbohydrate, protein) {
         String.format("%.1f", (protein * 4) + (carbohydrate * 4) + (fat * 9))
+    }
+
+    // Function to update nutritional values based on serving size
+    fun updateNutritionalValues(newServingSize: Float) {
+        val multiplier = newServingSize / 100f
+        fat = baseFat * multiplier
+        carbohydrate = baseCarbohydrate * multiplier
+        protein = baseProtein * multiplier
     }
 
     val currentUser = FirebaseAuth.getInstance().currentUser
@@ -89,16 +104,20 @@ fun PhotoBottomSheetContent(
                     val items = json.getJSONArray("items")
                     if (items.length() > 0) {
                         val item = items.getJSONObject(0)
-                        // Ambil nilai nutrisi dari API (jika tidak ada, gunakan default)
+                        // Store base values from API (per 100g)
                         val apiFat = item.optDouble("fat_total_g", fat.toDouble())
                         val apiCarbs = item.optDouble("carbohydrates_total_g", carbohydrate.toDouble())
                         val apiProtein = item.optDouble("protein_g", protein.toDouble())
 
                         // Update state di main thread
                         withContext(Dispatchers.Main) {
-                            fat = apiFat.toFloat()
-                            carbohydrate = apiCarbs.toFloat()
-                            protein = apiProtein.toFloat()
+                            // Set base values (per 100g)
+                            baseFat = apiFat.toFloat()
+                            baseCarbohydrate = apiCarbs.toFloat()
+                            baseProtein = apiProtein.toFloat()
+
+                            // Update displayed values based on serving size
+                            updateNutritionalValues(servingSize)
                         }
                     } else {
                         withContext(Dispatchers.Main) {
@@ -148,8 +167,7 @@ fun PhotoBottomSheetContent(
                     )
                 }
             },
-            // Gunakan colors default dari kode Anda yang sebelumnya
-            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+            colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = MaterialTheme.colorScheme.onBackground,
                 unfocusedLabelColor = MaterialTheme.colorScheme.onBackground,
                 disabledTextColor = MaterialTheme.colorScheme.onBackground,
@@ -158,9 +176,11 @@ fun PhotoBottomSheetContent(
                 disabledBorderColor = Color.Transparent
             )
         )
-        Column(modifier = Modifier
-            .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        Column(
+            modifier = Modifier
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier
@@ -181,9 +201,30 @@ fun PhotoBottomSheetContent(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                EditableNutrientInfo("Fat", fat) { fat = it }
-                EditableNutrientInfo("Carbohydrate", carbohydrate) { carbohydrate = it }
-                EditableNutrientInfo("Protein", protein) { protein = it }
+                // Add serving size input
+                EditableNutrientInfo(
+                    name = "Serving Size (g)",
+                    amount = servingSize,
+                    onValueChange = { newSize ->
+                        if (newSize > 0) {
+                            servingSize = newSize
+                            updateNutritionalValues(newSize)
+                        }
+                    }
+                )
+                EditableNutrientInfo("Fat", fat) { newValue ->
+                    fat = newValue
+                    // Update base value when manually edited
+                    baseFat = newValue / (servingSize / 100f)
+                }
+                EditableNutrientInfo("Carbohydrate", carbohydrate) { newValue ->
+                    carbohydrate = newValue
+                    baseCarbohydrate = newValue / (servingSize / 100f)
+                }
+                EditableNutrientInfo("Protein", protein) { newValue ->
+                    protein = newValue
+                    baseProtein = newValue / (servingSize / 100f)
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -205,10 +246,10 @@ fun PhotoBottomSheetContent(
                         return@Button
                     }
 
-                    if (fat < 0 || carbohydrate < 0 || protein < 0) {
+                    if (fat < 0 || carbohydrate < 0 || protein < 0 || servingSize <= 0) {
                         Toast.makeText(
                             context,
-                            "Nutrient values cannot be negative!",
+                            "Invalid nutrient values or serving size!",
                             Toast.LENGTH_SHORT
                         ).show()
                         return@Button
@@ -224,26 +265,71 @@ fun PhotoBottomSheetContent(
                         protein = protein,
                         fat = fat,
                         carbs = carbohydrate,
+                        servingSize = servingSize,
                         timestamp = System.currentTimeMillis()
                     )
 
-                    val batch = db.batch()
-                    batch.update(dbRef, "items.$uniqueKey", foodEntry)
-                    batch.update(
-                        dbRef,
-                        "totalCalories", FieldValue.increment(calories.toDouble()),
-                        "totalProtein", FieldValue.increment(protein.toDouble()),
-                        "totalFat", FieldValue.increment(fat.toDouble()),
-                        "totalCarbs", FieldValue.increment(carbohydrate.toDouble())
-                    )
+                    // Check if document exists first
+                    dbRef.get()
+                        .addOnSuccessListener { document ->
+                            if (document.exists()) {
+                                // Document exists, proceed with update
+                                val batch = db.batch()
+                                batch.update(dbRef, "items.$uniqueKey", foodEntry)
+                                batch.update(
+                                    dbRef,
+                                    "totalCalories", FieldValue.increment(calories.toDouble()),
+                                    "totalProtein", FieldValue.increment(protein.toDouble()),
+                                    "totalFat", FieldValue.increment(fat.toDouble()),
+                                    "totalCarbs", FieldValue.increment(carbohydrate.toDouble())
+                                )
 
-                    batch.commit()
-                        .addOnSuccessListener {
-                            Log.d("PhotoBottomSheet", "DocumentSnapshot successfully written!")
-                            onSubmitSuccess()
+                                batch.commit()
+                                    .addOnSuccessListener {
+                                        Log.d("PhotoBottomSheet", "Document updated successfully!")
+                                        onSubmitSuccess()
+                                    }
+                                    .addOnFailureListener { e ->
+                                        Log.w("PhotoBottomSheet", "Error updating document", e)
+                                        Toast.makeText(
+                                            context,
+                                            "Error updating data: ${e.message}",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                            } else {
+                                // Document doesn't exist, create it
+                                val initialData = hashMapOf(
+                                    "items" to hashMapOf(uniqueKey to foodEntry),
+                                    "totalCalories" to calories.toDouble(),
+                                    "totalProtein" to protein.toDouble(),
+                                    "totalFat" to fat.toDouble(),
+                                    "totalCarbs" to carbohydrate.toDouble(),
+                                    "date" to currentDate
+                                )
+
+                                dbRef.set(initialData)
+                                    .addOnSuccessListener {
+                                        Log.d("PhotoBottomSheet", "New document created successfully!")
+                                        onSubmitSuccess()
+                                    }
+                                    .addOnFailureListener { e ->
+                                        Log.w("PhotoBottomSheet", "Error creating document", e)
+                                        Toast.makeText(
+                                            context,
+                                            "Error creating data: ${e.message}",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                            }
                         }
                         .addOnFailureListener { e ->
-                            Log.w("PhotoBottomSheet", "Error writing document", e)
+                            Log.w("PhotoBottomSheet", "Error checking document", e)
+                            Toast.makeText(
+                                context,
+                                "Error checking data: ${e.message}",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                 },
                 modifier = Modifier
@@ -277,7 +363,7 @@ fun EditableNutrientInfo(name: String, amount: Float, onValueChange: (Float) -> 
             modifier = Modifier.padding(start = 12.dp)
         )
         OutlinedTextField(
-            value = amount.toString(),
+            value = String.format("%.1f", amount),
             onValueChange = {
                 if (it.isEmpty() || it.toFloatOrNull() != null) {
                     onValueChange(it.toFloatOrNull() ?: 0f)
@@ -293,6 +379,13 @@ fun EditableNutrientInfo(name: String, amount: Float, onValueChange: (Float) -> 
                 .fillMaxWidth()
                 .height(ConstantsStyle.DEFAULT_HEIGHT_VAL),
             shape = RoundedCornerShape(ConstantsStyle.ROUNDED_CORNER_VAL),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                disabledBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                focusedLabelColor = MaterialTheme.colorScheme.primary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
         )
     }
 }

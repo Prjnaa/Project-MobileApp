@@ -42,6 +42,7 @@ data class FoodItem(
     val fat: Float = 0f,
     val carbs: Float = 0f,
     val timestamp: Long = System.currentTimeMillis(),
+    val servingSize: Float = 100f,
     val plusCoins: Int = 0
 )
 
