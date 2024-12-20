@@ -3,14 +3,18 @@ package com.project.projectmap.ml
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
+import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
+import org.tensorflow.lite.support.image.TensorImage
+import org.tensorflow.lite.support.image.ops.ResizeOp
+import org.tensorflow.lite.support.image.ImageProcessor
 import java.io.FileInputStream
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
+import java.io.IOException
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlin.math.sqrt
 
 class FoodClassifier(private val context: Context) {
     private var interpreter: Interpreter? = null
@@ -34,8 +38,23 @@ class FoodClassifier(private val context: Context) {
 
     private fun loadModel() {
         try {
-            interpreter = Interpreter(loadModelFile())
+            val options = Interpreter.Options().apply {
+                setNumThreads(4)
+                setUseNNAPI(false) // Nonaktifkan NNAPI untuk debugging
+            }
+            interpreter = Interpreter(loadModelFile(), options)
             Log.d(TAG, "Model loaded successfully.")
+
+            val inputShape = interpreter?.getInputTensor(0)?.shape()?.joinToString(", ")
+            val inputType = interpreter?.getInputTensor(0)?.dataType()
+            Log.d(TAG, "Model Input Shape: $inputShape")
+            Log.d(TAG, "Model Input DataType: $inputType")
+
+            val outputShape = interpreter?.getOutputTensor(0)?.shape()?.joinToString(", ")
+            val outputType = interpreter?.getOutputTensor(0)?.dataType()
+            Log.d(TAG, "Model Output Shape: $outputShape")
+            Log.d(TAG, "Model Output DataType: $outputType")
+
         } catch (e: Exception) {
             Log.e(TAG, "Error loading model: ${e.message}")
             throw e
@@ -55,64 +74,64 @@ class FoodClassifier(private val context: Context) {
         try {
             context.assets.open(LABEL_PATH).bufferedReader().use { reader ->
                 reader.forEachLine { line ->
-                    labels.add(line)
+                    labels.add(line.trim())
                 }
             }
             Log.d(TAG, "Labels loaded successfully: ${labels.size} labels.")
+            labels.forEachIndexed { index, label ->
+                Log.d(TAG, "Label[$index]: $label")
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error loading labels: ${e.message}")
             throw e
         }
     }
 
-    /**
-     * Mengklasifikasikan gambar dan mengembalikan label prediksi
-     */
     suspend fun classifyImage(bitmap: Bitmap): String = withContext(Dispatchers.Default) {
         try {
-            // Pastikan bitmap dalam format ARGB_8888
+            // Pastikan bitmap ARGB_8888
             val argbBitmap = if (bitmap.config != Bitmap.Config.ARGB_8888) {
-                bitmap.copy(Bitmap.Config.ARGB_8888, false)
+                bitmap.copy(Bitmap.Config.ARGB_8888, false) ?: bitmap
             } else {
                 bitmap
             }
 
-            // Resize bitmap ke ukuran yang diinginkan
-            val resizedBitmap = Bitmap.createScaledBitmap(argbBitmap, IMG_SIZE, IMG_SIZE, true)
+            // Buat TensorImage dengan tipe FLOAT32
+            val tensorImage = TensorImage(DataType.FLOAT32)
+            tensorImage.load(argbBitmap)
 
-            // Konversi bitmap ke ByteBuffer
-            val inputBuffer = convertBitmapToByteBuffer(resizedBitmap)
+            // Tidak ada normalisasi, hanya resize, sesuai dengan saat training
+            val imageProcessor = ImageProcessor.Builder()
+                .add(ResizeOp(IMG_SIZE, IMG_SIZE, ResizeOp.ResizeMethod.BILINEAR))
+                .build()
 
-            // Debug: Log beberapa byte dari inputBuffer
+            val processedImage = imageProcessor.process(tensorImage)
+            val inputBuffer = processedImage.buffer
+
+            // Debug log
             inputBuffer.rewind()
             val firstBytes = ByteArray(12)
             inputBuffer.get(firstBytes)
             Log.d(TAG, "First 12 bytes of inputBuffer: ${firstBytes.joinToString(", ")}")
             inputBuffer.rewind()
 
-            // Siapkan buffer output
+            val inputFloats = FloatArray(inputBuffer.capacity() / 4)
+            inputBuffer.asFloatBuffer().get(inputFloats)
+            val mean = inputFloats.average()
+            val std = sqrt(inputFloats.map { (it - mean) * (it - mean) }.average())
+            Log.d(TAG, "Input Mean: $mean, Input Std: $std")
+
             val output = Array(1) { FloatArray(labels.size) }
 
-            // Jalankan inferensi
             interpreter?.run(inputBuffer, output)
 
-            // Debug: Log nilai output sebelum softmax
-            Log.d(TAG, "Raw model output: ${output[0].joinToString(", ")}")
+            Log.d(TAG, "Model output (probabilities): ${output[0].joinToString(", ")}")
+            val sumProb = output[0].sum()
+            Log.d(TAG, "Sum of probabilities: $sumProb")
 
-            // Terapkan softmax jika diperlukan
-            val probabilities = softmax(output[0])
-
-            // Debug: Log nilai output setelah softmax
-            for (i in labels.indices) {
-                Log.d(TAG, "Class ${labels[i]}: ${probabilities[i]}")
-            }
-
-            // Cari indeks dengan probabilitas tertinggi
-            val maxIndex = probabilities.indices.maxByOrNull { probabilities[it] } ?: -1
-
-            // Log hasil prediksi
-            if (maxIndex != -1) {
-                Log.d(TAG, "Predicted class index: $maxIndex (${labels[maxIndex]}) with value: ${probabilities[maxIndex]}")
+            val maxIndex = output[0].indices.maxByOrNull { output[0][it] } ?: -1
+            return@withContext if (maxIndex != -1 && output[0][maxIndex] > 0) {
+                Log.d(TAG, "Predicted class index: $maxIndex (${labels[maxIndex]}) with value: ${output[0][maxIndex]}")
                 labels[maxIndex]
             } else {
                 Log.e(TAG, "No valid prediction found.")
@@ -124,47 +143,6 @@ class FoodClassifier(private val context: Context) {
         }
     }
 
-    private fun convertBitmapToByteBuffer(bitmap: Bitmap): ByteBuffer {
-        val byteBuffer = ByteBuffer.allocateDirect(1 * IMG_SIZE * IMG_SIZE * 3 * 4) // float32
-        byteBuffer.order(ByteOrder.nativeOrder())
-
-        val intValues = IntArray(IMG_SIZE * IMG_SIZE)
-        bitmap.getPixels(intValues, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
-
-        for (pixelValue in intValues) {
-            // Ekstrak nilai RGB dan normalisasi sesuai dengan EfficientNetB0
-            val r = ((pixelValue shr 16 and 0xFF) / 255.0f - 0.485f) / 0.229f
-            val g = ((pixelValue shr 8 and 0xFF) / 255.0f - 0.456f) / 0.224f
-            val b = ((pixelValue and 0xFF) / 255.0f - 0.406f) / 0.225f
-
-            byteBuffer.putFloat(r)
-            byteBuffer.putFloat(g)
-            byteBuffer.putFloat(b)
-
-            // Log nilai pertama untuk verifikasi
-            if (byteBuffer.position() <= 12) { // Log 3 float values (r, g, b)
-                Log.d(TAG, "Pixel RGB: ($r, $g, $b)")
-            }
-        }
-
-        return byteBuffer
-    }
-
-
-
-    /**
-     * Menambahkan fungsi softmax
-     */
-    private fun softmax(input: FloatArray): FloatArray {
-        val max = input.maxOrNull() ?: 0f
-        val expValues = input.map { Math.exp((it - max).toDouble()).toFloat() }
-        val sum = expValues.sum()
-        return expValues.map { it / sum }.toFloatArray()
-    }
-
-    /**
-     * Menutup interpreter saat tidak diperlukan
-     */
     fun close() {
         interpreter?.close()
     }

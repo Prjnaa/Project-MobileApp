@@ -1,6 +1,7 @@
 package com.project.projectmap.ui.screens.main
 
 import android.content.Intent
+import android.icu.text.DecimalFormat
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -34,6 +35,7 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -308,6 +310,10 @@ fun HistoryList(
     onNavToCalendar: () -> Unit = {},
     items: List<FoodItem>
 ) {
+    // Sort items by timestamp in descending order (newest first)
+    val sortedItems = remember(items) {
+        items.sortedByDescending { it.timestamp }
+    }
 
     val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
@@ -371,11 +377,16 @@ fun HistoryList(
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    itemsIndexed(items) { index, item ->
+                    itemsIndexed(sortedItems) { index, item ->
 //                        val random = (1..100).random()
 //                        val isDone = Random.nextBoolean()
                         val cal = item.calories.roundToInt().toString()
-                        HistoryItem(index = index, title = item.name, text = cal)
+                        HistoryItem(
+                            index = index,
+                            title = item.name,
+                            text = cal,
+                            timestamp = item.timestamp
+                        )
                     }
                 }
             }
@@ -486,7 +497,10 @@ fun SetNewTargetLink(
 @Composable
 fun MacroItem(title: String, progress: Float, target: Float) {
     val constrainedProgress = progress / target
+    val decimalFormat = DecimalFormat("#.#")
     val surplus = if (progress > target) progress - target else 0f
+    val formattedSurplus = decimalFormat.format(surplus)
+
 
     Column(
         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -509,7 +523,7 @@ fun MacroItem(title: String, progress: Float, target: Float) {
                 .align(Alignment.CenterHorizontally)
         )
         Text(
-            text = "+ $surplus g",
+            text = "+ $formattedSurplus g",
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.tertiary.copy(if (surplus > 0) 1f else 0f),
@@ -530,9 +544,15 @@ fun HistoryItem(
     index: Int,
     title: String = "Default Title $index",
     text: String,
+    timestamp: Long
 //    coinCount: Int
 ) {
     val capitalizedTitle = title.split(" ").joinToString(" ") { it.capitalize() }
+    val timeString = remember(timestamp) {
+        val date = java.util.Date(timestamp)
+        val formatter = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+        formatter.format(date)
+    }
 
     Surface(
         modifier = Modifier
@@ -550,12 +570,23 @@ fun HistoryItem(
                     .weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Text(
-                    text = capitalizedTitle,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(end = 8.dp)
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = capitalizedTitle,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = timeString,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
+                    )
+                }
                 Text(
                     text = "$text Calories",
                     fontSize = 16.sp,

@@ -52,9 +52,9 @@ fun Navigation(
         val cachedUserId = getCachedUserId(context)
         sessionExpired = isSessionExpired(context)
 
-        Log.d("NavigationTod", "Cached User ID: ${getCachedUserId(context)}")
-        Log.d("NavigationTod", "Session Expired: $sessionExpired")
-        Log.d("NavigationTod", "Current User: $currentUser")
+        Log.d("NavigationSpace", "Cached User ID: ${getCachedUserId(context)}")
+        Log.d("NavigationSpace", "Session Expired: $sessionExpired")
+        Log.d("NavigationSpace", "Current User: $currentUser")
 
 
         if (cachedUserId != null) {

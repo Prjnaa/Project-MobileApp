@@ -110,6 +110,8 @@ dependencies {
     implementation(libs.litert.gpu.api)
     implementation(libs.litert.support.api)
 
+    implementation(libs.okhttp)
+
     // Firebase dependencies
     implementation(libs.firebase.auth.ktx)
     implementation(libs.firebase.firestore.ktx.v2481)

@@ -79,6 +79,7 @@ fun CalendarPage(onClose: () -> Unit) {
             )
 
             if (dailyIntake != null) {
+                // Convert items to list and sort by timestamp
                 dailyHistory = dailyIntake.items.map { (key, value) ->
                     mapOf(
                         "name" to value.name,
@@ -86,8 +87,9 @@ fun CalendarPage(onClose: () -> Unit) {
                         "protein" to value.protein,
                         "fat" to value.fat,
                         "carbs" to value.carbs,
+                        "timestamp" to (value.timestamp ?: System.currentTimeMillis())
                     )
-                }
+                }.sortedByDescending { it["timestamp"] as Long }
             } else {
                 dailyHistory = emptyList()
             }
@@ -275,7 +277,7 @@ fun CalendarPage(onClose: () -> Unit) {
                                 title = history["name"]?.toString() ?: "Unknown",
                                 text = "Calories: ${(history["calories"] as? Number)?.toInt() ?: 0}",
                                 isDone = true,
-//                                coinCount = 10
+                                timestamp = (history["timestamp"] as? Long) ?: System.currentTimeMillis()
                             )
                         }
                     }
@@ -285,39 +287,55 @@ fun CalendarPage(onClose: () -> Unit) {
     }
 }
 
-
 @Composable
 fun ChallengeItem(
     index: Int,
     title: String = "Default Title $index",
     text: String,
     isDone: Boolean,
+    timestamp: Long
 //    coinCount: Int
 ) {
     val capitalizedTitle = title.split(" ").joinToString(" ") { it.capitalize() }
+    val timeString = remember(timestamp) {
+        val date = java.util.Date(timestamp)
+        val formatter = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+        formatter.format(date)
+    }
 
     Surface(
         modifier = Modifier
-            .fillMaxWidth(),  // Ensure it fills the width
+            .fillMaxWidth(),
         color = MaterialTheme.colorScheme.primary,
         shape = RoundedCornerShape(16.dp)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),  // Add padding to the Row
-            horizontalArrangement = Arrangement.SpaceBetween,  // Space out content
-            verticalAlignment = Alignment.Top // Center align vertically
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top
         ) {
             Column(
                 modifier = Modifier
                     .weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Text(
-                    text = capitalizedTitle,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(end = 8.dp)
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = capitalizedTitle,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = timeString,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
+                    )
+                }
                 Text(
                     text = text,
                     fontSize = 16.sp,
