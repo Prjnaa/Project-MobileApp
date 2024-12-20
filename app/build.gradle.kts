@@ -5,6 +5,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.google.gms.google.services)
+    id ("com.github.ben-manes.versions") version "0.51.0"
+
 }
 
 val secretPropertiesFile = rootProject.file("secret.properties")
@@ -101,7 +103,6 @@ dependencies {
     implementation(libs.androidx.camera.extensions)
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.play.services.base)
-    implementation(libs.play.services.auth.v2010)
 
     implementation(libs.litert)
     implementation(libs.litert.gpu)
@@ -114,5 +115,4 @@ dependencies {
 
     // Firebase dependencies
     implementation(libs.firebase.auth.ktx)
-    implementation(libs.firebase.firestore.ktx.v2481)
 }

@@ -1,7 +1,7 @@
 package com.project.projectmap.utilities
 
 import android.content.Context
-import android.util.Log
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 
@@ -21,8 +21,6 @@ fun saveLoginInfo(context: Context, userId: String) {
         .apply()
 }
 
-
-
 fun getCachedUserId(context: Context): String? {
     val sharedPreferences = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
     return sharedPreferences.getString("cached_user_id", null)
@@ -30,12 +28,25 @@ fun getCachedUserId(context: Context): String? {
 
 fun listenToUserDeletion(userId: String, onUserDeleted: () -> Unit): ListenerRegistration {
     val db = FirebaseFirestore.getInstance()
+    val auth = FirebaseAuth.getInstance()
     val userRef = db.collection("users").document(userId)
-    return userRef.addSnapshotListener { snapshot, _ ->
-        if (snapshot == null || !snapshot.exists()) {
-            onUserDeleted()
+
+    val firestoreListener = userRef.addSnapshotListener { snapshot, _ ->
+        // Periksa apakah snapshot ada dan ada pengguna yang sedang login
+        if (snapshot != null && snapshot.exists() && auth.currentUser != null) {
+            val currentUser = auth.currentUser
+            // Pastikan userId yang cocok dengan currentUser.uid
+            if (currentUser?.uid == userId) {
+                currentUser.delete()?.addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        onUserDeleted() // Panggil callback setelah berhasil menghapus user
+                    }
+                }
+            }
         }
     }
+
+    return firestoreListener
 }
 
 fun clearCachedUserData(context: Context) {

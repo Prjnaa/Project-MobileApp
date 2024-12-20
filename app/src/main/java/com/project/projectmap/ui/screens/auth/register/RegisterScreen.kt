@@ -1,5 +1,6 @@
 package com.project.projectmap.ui.screens.auth.register
 
+import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -43,11 +45,13 @@ import com.project.projectmap.components.msc.getCurrentDate
 import com.project.projectmap.firebase.model.DailyIntake
 import com.project.projectmap.firebase.model.Profile
 import com.project.projectmap.firebase.model.User
+import com.project.projectmap.utilities.saveLoginInfo
 
 @Composable
 fun RegisterScreen(
     onRegisterSuccess: () -> Unit,
-    onNavigateToLogin: () -> Unit
+    onNavigateToLogin: () -> Unit,
+    context: Context = LocalContext.current
 ) {
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -205,6 +209,7 @@ fun RegisterScreen(
                                             userId = userId,
                                             profile = profile,
                                             db = db,
+                                            context = context,
                                             onComplete = { success ->
                                                 if (success) {
                                                     val currentDate = getCurrentDate()
@@ -300,7 +305,8 @@ private fun saveUserProfile(
     profile: Profile,
     db: FirebaseFirestore,
     onComplete: (Boolean) -> Unit,
-    errorMessage: (String) -> Unit
+    errorMessage: (String) -> Unit,
+    context: Context
 ) {
     val firestore = db
     val userRef = firestore.collection("users").document(userId)
@@ -310,6 +316,7 @@ private fun saveUserProfile(
     )
 
     userRef.set(user).addOnCompleteListener { task ->
+        saveLoginInfo(context, userId)
         if (task.isSuccessful) {
             onComplete(true)
         } else {
