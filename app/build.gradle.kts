@@ -5,11 +5,9 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.google.gms.google.services)
-    id ("com.github.ben-manes.versions") version "0.51.0"
-
 }
 
-val secretPropertiesFile = rootProject.file("secret.properties")
+val secretPropertiesFile = rootProject.file("secrets.properties")
 val secretProperties = Properties()
 if (secretPropertiesFile.exists()) {
     secretProperties.load(FileInputStream(secretPropertiesFile))
@@ -113,4 +111,11 @@ dependencies {
 
     // Firebase dependencies
     implementation(libs.firebase.auth.ktx)
+
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+//    DataStore
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
 }
+

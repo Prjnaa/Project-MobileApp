@@ -8,13 +8,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.firestore.ListenerRegistration
 import com.project.projectmap.ui.screens.auth.login.LoginScreen
 import com.project.projectmap.ui.screens.auth.register.RegisterScreen
 import com.project.projectmap.ui.screens.badges.BadgesPage
@@ -22,9 +22,17 @@ import com.project.projectmap.ui.screens.calendar.CalendarPage
 import com.project.projectmap.ui.screens.main.MainTrackerScreen
 import com.project.projectmap.ui.screens.main.SetTargetScreen
 import com.project.projectmap.ui.screens.profile.ProfileScreen
-import com.project.projectmap.utilities.getCachedUserId
-import com.project.projectmap.utilities.isSessionExpired
-import com.project.projectmap.utilities.listenToUserDeletion
+import com.project.projectmap.utilities.dataStore
+import com.project.projectmap.utilities.saveSession
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+
+//import com.project.projectmap.utilities.getCachedUserId
+//import com.project.projectmap.utilities.isSessionExpired
+//import com.project.projectmap.utilities.listenToUserDeletion
 
 
 object AppDestinations {
@@ -44,34 +52,17 @@ fun Navigation(
 ) {
     val auth = FirebaseAuth.getInstance()
     val currentUser = auth.currentUser
-    var startDestination by remember { mutableStateOf(AppDestinations.MAIN_ROUTE) }
-    var sessionExpired by remember { mutableStateOf(false) }
-    var userDeletionListener by remember { mutableStateOf<ListenerRegistration?>(null) }
+    var startDestination by remember { mutableStateOf(AppDestinations.LOGIN_ROUTE) }
 
-    LaunchedEffect(currentUser) {
-        val cachedUserId = getCachedUserId(context)
-        sessionExpired = isSessionExpired(context)
+    val USER_ID = stringPreferencesKey("user_id")
 
-        Log.d("NavigationSpace", "Cached User ID: ${getCachedUserId(context)}")
-        Log.d("NavigationSpace", "Session Expired: $sessionExpired")
-        Log.d("NavigationSpace", "Current User: $currentUser")
+    val userIdFlow: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[USER_ID]
+    }
 
-
-        if (cachedUserId != null) {
-            userDeletionListener?.remove()
-            userDeletionListener = listenToUserDeletion(cachedUserId) {
-                FirebaseAuth.getInstance().signOut()
-                clearCachedUserData(context)
-                startDestination = AppDestinations.LOGIN_ROUTE
-            }
-
-            startDestination = when {
-                sessionExpired -> AppDestinations.LOGIN_ROUTE
-                currentUser != null -> AppDestinations.MAIN_ROUTE
-                else -> AppDestinations.LOGIN_ROUTE
-            }
-        } else {
-            startDestination = AppDestinations.LOGIN_ROUTE
+    LaunchedEffect(Unit) {
+        userIdFlow.collect { userId ->
+            Log.d("NavigationSpaceOne", "User ID: $userId")
         }
     }
 
@@ -92,6 +83,10 @@ fun Navigation(
                         navController.navigate(AppDestinations.MAIN_ROUTE) {
                             popUpTo(AppDestinations.LOGIN_ROUTE) { inclusive = true }
                         }
+                    }
+
+                    CoroutineScope(Dispatchers.IO).launch {
+                        saveSession(context, currentUser?.uid ?: "")
                     }
                 },
                 onNavigateToRegister = {

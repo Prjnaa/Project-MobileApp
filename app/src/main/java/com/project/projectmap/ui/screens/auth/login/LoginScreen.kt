@@ -56,7 +56,7 @@ import com.project.projectmap.R
 import com.project.projectmap.components.msc.ConstantsStyle
 import com.project.projectmap.components.msc.PasswordInput
 import com.project.projectmap.firebase.model.Profile
-import com.project.projectmap.utilities.saveLoginInfo
+//import com.project.projectmap.utilities.saveLoginInfo
 
 @Composable
 fun LoginScreen(
@@ -384,7 +384,7 @@ private fun handleUserLogin(
             if (document.exists()) {
                 val userData = document.data
                 if (userData?.containsKey("targets") == true) {
-                    saveLoginInfo(context, user.uid)
+//                    saveLoginInfo(context, user.uid)
                     onLoginSuccess(false)
                 } else {
                     onTargetNotFound()

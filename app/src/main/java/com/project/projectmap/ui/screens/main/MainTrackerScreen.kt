@@ -35,7 +35,9 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -58,6 +60,7 @@ import com.project.projectmap.firebase.model.FoodItem
 import com.project.projectmap.ui.screens.camera.CameraActivity
 import com.project.projectmap.ui.theme.ProjectmapTheme
 import com.project.projectmap.ui.viewModel.MainTrackerViewModel
+import okhttp3.internal.format
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
@@ -105,7 +108,8 @@ fun MainTrackerScreen(
             TopBar(
                 onNavToBadges = onNavigateToBadges,
                 onNavToProfile = onNavigateToProfile,
-                userName = userInfo.profile.name
+                userName = userInfo.profile.name,
+                usersPoints = userInfo.profile.coin
             )
         }
         if (isLoading) {
@@ -148,8 +152,25 @@ fun MainTrackerScreen(
 fun TopBar(
     onNavToBadges: () -> Unit = {},
     onNavToProfile: () -> Unit = {},
-    userName: String = "user"
+    userName: String = "user",
+    usersPoints: Int = 0,
 ) {
+    var formattedPts by remember { mutableStateOf<String?>("") }
+    when(usersPoints) {
+        in 0..999 -> {
+            formattedPts = usersPoints.toString()
+        }
+        in 1000..999999 -> {
+            formattedPts = "${usersPoints / 1000}k"
+        }
+        in 1000000..999999999 -> {
+            formattedPts = "${usersPoints / 1000000}M"
+        }
+        else -> {
+            formattedPts = "999M+"
+        }
+    }
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -229,7 +250,7 @@ fun TopBar(
                         modifier = Modifier.size(28.dp)
                     )
                     Text(
-                        text = "1200",
+                        text = formattedPts ?: "0",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -496,7 +517,7 @@ fun SetNewTargetLink(
 //MACRO ITEM
 @Composable
 fun MacroItem(title: String, progress: Float, target: Float) {
-    val constrainedProgress = progress / target
+    val constrainedProgress = if (progress > 0) progress / target else 0f
     val decimalFormat = DecimalFormat("#.#")
     val surplus = if (progress > target) progress - target else 0f
     val formattedSurplus = decimalFormat.format(surplus)

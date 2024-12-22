@@ -1,55 +1,51 @@
 package com.project.projectmap.utilities
 
 import android.content.Context
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ListenerRegistration
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.flow.first
 
-fun isSessionExpired(context: Context): Boolean {
-    val sharedPreferences = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-    val lastLoginTime = sharedPreferences.getLong("last_login_time", 0)
-    val currentTime = System.currentTimeMillis()
-    val sixtyDaysInMillis = 60L * 24 * 60 * 60 * 1000
-    return currentTime - lastLoginTime > sixtyDaysInMillis
-}
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_prefs")
 
-fun saveLoginInfo(context: Context, userId: String) {
-    val sharedPreferences = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-    sharedPreferences.edit()
-        .putString("cached_user_id", userId)
-        .putLong("last_login_time", System.currentTimeMillis())
-        .apply()
-}
+val USER_ID = stringPreferencesKey("user_id")
+val TIMESTAMP = longPreferencesKey("timestamp")
 
-fun getCachedUserId(context: Context): String? {
-    val sharedPreferences = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-    return sharedPreferences.getString("cached_user_id", null)
-}
+const val EXPIRY_TIME = 1000 * 60 * 60 * 24 * 30L
 
-fun listenToUserDeletion(userId: String, onUserDeleted: () -> Unit): ListenerRegistration {
-    val db = FirebaseFirestore.getInstance()
-    val auth = FirebaseAuth.getInstance()
-    val userRef = db.collection("users").document(userId)
-
-    val firestoreListener = userRef.addSnapshotListener { snapshot, _ ->
-        // Periksa apakah snapshot ada dan ada pengguna yang sedang login
-        if (snapshot != null && snapshot.exists() && auth.currentUser != null) {
-            val currentUser = auth.currentUser
-            // Pastikan userId yang cocok dengan currentUser.uid
-            if (currentUser?.uid == userId) {
-                currentUser.delete()?.addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        onUserDeleted() // Panggil callback setelah berhasil menghapus user
-                    }
-                }
-            }
-        }
+suspend fun saveSession(context: Context, userId:String) {
+    context.dataStore.edit { prefs ->
+        prefs[USER_ID] = userId
+        prefs[TIMESTAMP] = System.currentTimeMillis()
     }
-
-    return firestoreListener
 }
 
-fun clearCachedUserData(context: Context) {
-    val sharedPreferences = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-    sharedPreferences.edit().clear().apply()
+suspend fun isSessionExpired(context: Context): Boolean {
+    val prefs = context.dataStore.data.first()
+    val userId = prefs[USER_ID]
+    val timestamp = prefs[TIMESTAMP]
+
+    return if (userId != null && timestamp != null) {
+        val currentTime = System.currentTimeMillis()
+        val elapsedTime = currentTime - timestamp
+        if (elapsedTime > EXPIRY_TIME) {
+            // Session expired, clear the data
+            clearSession(context)
+            true
+        } else {
+            false
+        }
+    } else {
+        true // No userId or timestamp, consider it expired
+    }
+}
+
+suspend fun clearSession(context: Context) {
+    context.dataStore.edit { prefs ->
+        prefs.remove(USER_ID)
+        prefs.remove(TIMESTAMP)
+    }
 }
