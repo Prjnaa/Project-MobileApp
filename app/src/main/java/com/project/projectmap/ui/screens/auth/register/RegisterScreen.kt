@@ -45,7 +45,6 @@ import com.project.projectmap.components.msc.getCurrentDate
 import com.project.projectmap.firebase.model.DailyIntake
 import com.project.projectmap.firebase.model.Profile
 import com.project.projectmap.firebase.model.User
-import com.project.projectmap.utilities.saveSession
 
 //import com.project.projectmap.utilities.saveLoginInfo
 

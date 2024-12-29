@@ -3,12 +3,10 @@ package com.project.projectmap.components.navigation
 import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -22,12 +20,8 @@ import com.project.projectmap.ui.screens.calendar.CalendarPage
 import com.project.projectmap.ui.screens.main.MainTrackerScreen
 import com.project.projectmap.ui.screens.main.SetTargetScreen
 import com.project.projectmap.ui.screens.profile.ProfileScreen
-import com.project.projectmap.utilities.dataStore
-import com.project.projectmap.utilities.saveSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 //import com.project.projectmap.utilities.getCachedUserId
@@ -52,19 +46,15 @@ fun Navigation(
 ) {
     val auth = FirebaseAuth.getInstance()
     val currentUser = auth.currentUser
-    var startDestination by remember { mutableStateOf(AppDestinations.LOGIN_ROUTE) }
 
-    val USER_ID = stringPreferencesKey("user_id")
+    Log.d("NAVSPACE", "Current User: ${currentUser}")
 
-    val userIdFlow: Flow<String?> = context.dataStore.data.map { prefs ->
-        prefs[USER_ID]
+    var startDestination by remember { mutableStateOf(AppDestinations.MAIN_ROUTE) }
+
+    if (currentUser == null) {
+        startDestination = AppDestinations.LOGIN_ROUTE
     }
 
-    LaunchedEffect(Unit) {
-        userIdFlow.collect { userId ->
-            Log.d("NavigationSpaceOne", "User ID: $userId")
-        }
-    }
 
     NavHost(
         navController = navController,
@@ -83,10 +73,6 @@ fun Navigation(
                         navController.navigate(AppDestinations.MAIN_ROUTE) {
                             popUpTo(AppDestinations.LOGIN_ROUTE) { inclusive = true }
                         }
-                    }
-
-                    CoroutineScope(Dispatchers.IO).launch {
-                        saveSession(context, currentUser?.uid ?: "")
                     }
                 },
                 onNavigateToRegister = {

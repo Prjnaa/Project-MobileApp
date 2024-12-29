@@ -3,7 +3,6 @@ package com.project.projectmap.ui.screens.camera
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,7 +27,11 @@ import com.project.projectmap.R
 import com.project.projectmap.components.msc.ConstantsStyle
 import com.project.projectmap.components.msc.getCurrentDate
 import com.project.projectmap.firebase.model.FoodItem
+import com.project.projectmap.firebase.model.User
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -65,6 +68,7 @@ fun PhotoBottomSheetContent(
     var servingSize by remember { mutableStateOf(100f) }
     var foodNameState by remember { mutableStateOf(formattedFoodName) }
     var isEditable by remember { mutableStateOf(false) }
+    var plusCoin by remember { mutableStateOf(0) }
 
     val calories = remember(fat, carbohydrate, protein) {
         String.format("%.1f", (protein * 4) + (carbohydrate * 4) + (fat * 9))
@@ -259,6 +263,15 @@ fun PhotoBottomSheetContent(
                     val uniqueKey = System.currentTimeMillis().toString()
                     val dbRef = db.collection("intakes").document("${user.uid}-$currentDate")
 
+                    plusCoin = addCoins(
+                        uid = user.uid,
+                        db = db,
+                        calories = calories.toFloat(),
+                        fat = fat,
+                        protein = protein,
+                        carbs = carbohydrate
+                    )
+
                     val foodEntry = FoodItem(
                         name = foodNameState,
                         calories = calories.toFloat(),
@@ -266,6 +279,7 @@ fun PhotoBottomSheetContent(
                         fat = fat,
                         carbs = carbohydrate,
                         servingSize = servingSize,
+                        plusCoins = plusCoin,
                         timestamp = System.currentTimeMillis()
                     )
 
@@ -388,4 +402,43 @@ fun EditableNutrientInfo(name: String, amount: Float, onValueChange: (Float) -> 
             )
         )
     }
+}
+
+fun addCoins(uid: String, db: FirebaseFirestore, calories: Float, fat: Float, protein: Float, carbs: Float): Int {
+    var coinsToAdd = 0
+
+    val proteinRatio = protein / calories
+    val fatRatio = fat / calories
+    val carbsRatio = carbs / calories
+
+    if (proteinRatio > fatRatio && proteinRatio > carbsRatio) {
+        // Food with the highest protein-to-calorie ratio is considered the healthiest
+        coinsToAdd = (calories / 7).toInt() // Add more coins for healthier food
+    } else if (fatRatio > proteinRatio && fatRatio > carbsRatio) {
+        // Food with the highest fat-to-calorie ratio
+        coinsToAdd = (calories / 10).toInt() // Add fewer coins for higher fat content
+    } else {
+        // Food with the highest carbs-to-calorie ratio
+        coinsToAdd = (calories / 8).toInt() // Add coins for balanced or carb-heavy food
+    }
+
+    CoroutineScope(Dispatchers.IO).launch {
+        val userRef = db.collection("users").document(uid)
+
+        try {
+            val document = userRef.get().await()
+
+            if (document.exists()) {
+                val user = document.toObject(User::class.java)
+                user?.let {
+                    val updatedUser = it.addCoins(coinsToAdd)
+                    userRef.set(updatedUser).await()
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    return coinsToAdd
 }
