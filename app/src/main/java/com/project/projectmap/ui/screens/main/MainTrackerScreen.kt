@@ -2,6 +2,7 @@ package com.project.projectmap.ui.screens.main
 
 import android.content.Intent
 import android.icu.text.DecimalFormat
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,6 +28,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -56,7 +60,6 @@ import com.project.projectmap.firebase.model.FoodItem
 import com.project.projectmap.ui.screens.camera.CameraActivity
 import com.project.projectmap.ui.viewModel.MainTrackerViewModel
 import kotlin.math.roundToInt
-import okhttp3.internal.format
 
 // Main UI Function
 @Composable
@@ -127,23 +130,24 @@ fun TopBar(
     val userPtsFloat = usersPoints.toFloat()
     val floatFormat = DecimalFormat("#.#")
 
-    formattedPts = when (usersPoints) {
-        in 0..999 -> {
-            usersPoints.toString()
+    formattedPts =
+        when (usersPoints) {
+            in 0..999 -> {
+                usersPoints.toString()
+            }
+            in 1000..999999 -> {
+                "${floatFormat.format(userPtsFloat / 1000)}k"
+            }
+            in 1000000..999999999 -> {
+                "${floatFormat.format(userPtsFloat / 1000000)}M"
+            }
+            in 1000000000..Int.MAX_VALUE -> {
+                "${floatFormat.format(userPtsFloat / 1000000000)}B"
+            }
+            else -> {
+                "0"
+            }
         }
-        in 1000..999999 -> {
-            "${floatFormat.format(userPtsFloat / 1000)}k"
-        }
-        in 1000000..999999999 -> {
-            "${floatFormat.format(userPtsFloat / 1000000)}M"
-        }
-        in 1000000000..Int.MAX_VALUE -> {
-            "${floatFormat.format(userPtsFloat / 1000000000)}B"
-        }
-        else -> {
-            "0"
-        }
-    }
 
     Surface(
         modifier = Modifier.fillMaxWidth().height(54.dp),
@@ -284,6 +288,7 @@ fun Tracker(
 fun HistoryList(onNavToCalendar: () -> Unit = {}, items: List<FoodItem>) {
     // Sort items by timestamp in descending order (newest first)
     val sortedItems = remember(items) { items.sortedByDescending { it.timestamp } }
+    val expandedItemIndex = remember { mutableStateOf(-1) }
 
     val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
@@ -330,14 +335,20 @@ fun HistoryList(onNavToCalendar: () -> Unit = {}, items: List<FoodItem>) {
                     color = Color.Transparent) {
                         LazyColumn(verticalArrangement = Arrangement.spacedBy(20.dp)) {
                             itemsIndexed(sortedItems) { index, item ->
-                                //                        val random = (1..100).random()
-                                //                        val isDone = Random.nextBoolean()
-                                val cal = item.calories.roundToInt().toString()
                                 HistoryItem(
                                     index = index,
                                     title = item.name,
-                                    text = cal,
-                                    timestamp = item.timestamp)
+                                    calories = item.calories.roundToInt().toString(),
+                                    coinsAdded = item.plusCoins,
+                                    timestamp = item.timestamp,
+                                    carbs = item.carbs,
+                                    fat = item.fat,
+                                    protein = item.protein,
+                                    isExpanded = expandedItemIndex.value == index,
+                                    onClick = {
+                                        expandedItemIndex.value = if (expandedItemIndex.value == index) -1 else index
+                                    }
+                                )
                             }
                         }
                     }
@@ -466,14 +477,81 @@ fun MacroItem(title: String, progress: Float, target: Float) {
         }
 }
 
-// CHALLENGE ITEM
+//@Composable
+//fun HistoryItem(
+//    index: Int,
+//    title: String = "Default Title $index",
+//    text: String,
+//    coinsAdded: Int = 0,
+//    timestamp: Long
+//    //    coinCount: Int
+//) {
+//    val capitalizedTitle = title.split(" ").joinToString(" ") { it.capitalize() }
+//    val timeString =
+//        remember(timestamp) {
+//            val date = java.util.Date(timestamp)
+//            val formatter = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+//            formatter.format(date)
+//        }
+//
+//    Surface(
+//        modifier = Modifier.fillMaxWidth(), // Ensure it fills the width
+//        color = MaterialTheme.colorScheme.primary,
+//        shape = RoundedCornerShape(ConstantsStyle.ROUNDED_CORNER_VAL)) {
+//            Row(
+//                modifier = Modifier.padding(16.dp),
+//                horizontalArrangement = Arrangement.SpaceBetween,
+//                verticalAlignment = Alignment.Top) {
+//                    Column(
+//                        modifier = Modifier.weight(1f),
+//                        verticalArrangement = Arrangement.spacedBy(4.dp)) {
+//                            Row(
+//                                modifier = Modifier.fillMaxWidth(),
+//                                horizontalArrangement = Arrangement.SpaceBetween,
+//                                verticalAlignment = Alignment.CenterVertically) {
+//                                    Text(
+//                                        text = capitalizedTitle,
+//                                        fontSize = 20.sp,
+//                                        fontWeight = FontWeight.SemiBold,
+//                                        modifier = Modifier.weight(1f))
+//                                    Text(
+//                                        text = timeString,
+//                                        fontSize = 14.sp,
+//                                        color =
+//                                            MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f))
+//                                }
+//                            Text(
+//                                text = "$text Calories",
+//                                fontSize = 16.sp,
+//                            )
+//                            Row(
+//                                modifier = Modifier.fillMaxWidth(),
+//                                horizontalArrangement = Arrangement.SpaceBetween
+//                            ) {
+//
+//                                Text(
+//                                    text = "+ $coinsAdded coins",
+//                                    fontSize = 12.sp,
+//                                    fontWeight = FontWeight.SemiBold,
+//                                )
+//                            }
+//                        }
+//                }
+//        }
+//}
+
 @Composable
 fun HistoryItem(
     index: Int,
     title: String = "Default Title $index",
-    text: String,
-    timestamp: Long
-    //    coinCount: Int
+    calories: String,
+    coinsAdded: Int = 0,
+    timestamp: Long,
+    fat: Float,
+    protein: Float,
+    carbs: Float,
+    isExpanded: Boolean,
+    onClick: () -> Unit
 ) {
     val capitalizedTitle = title.split(" ").joinToString(" ") { it.capitalize() }
     val timeString =
@@ -484,36 +562,150 @@ fun HistoryItem(
         }
 
     Surface(
-        modifier = Modifier.fillMaxWidth(), // Ensure it fills the width
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         color = MaterialTheme.colorScheme.primary,
-        shape = RoundedCornerShape(ConstantsStyle.ROUNDED_CORNER_VAL)) {
+        shape = RoundedCornerShape(ConstantsStyle.ROUNDED_CORNER_VAL)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            // Header row (Title and Timestamp)
             Row(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = capitalizedTitle,
-                                        fontSize = 20.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        modifier = Modifier.weight(1f))
-                                    Text(
-                                        text = timeString,
-                                        fontSize = 14.sp,
-                                        color =
-                                            MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f))
-                                }
-                            Text(
-                                text = "$text Calories",
-                                fontSize = 16.sp,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = capitalizedTitle,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = timeString,
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
+                        )
+                    }
+                    Text(
+                        text = "$calories Calories",
+                        fontSize = 16.sp,
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = if (isExpanded) "Hide Details" else "Click to Show Details",
+                            fontSize = 14.sp,
+                            textDecoration = TextDecoration.Underline,
+                        )
+                        Text(
+                            text = "+ $coinsAdded coins",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
+            }
+
+            // Expanded details section with hidden info
+            AnimatedVisibility(visible = isExpanded) {
+                Column(
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Fat:",
+                            fontSize = 14.sp,
+                            modifier = Modifier.align(Alignment.CenterVertically) // Left-aligned text
+                        )
+                        Box(
+                            modifier = Modifier
+                                .weight(1f) // Garis mengisi sisa ruang
+                                .align(Alignment.CenterVertically) // Align center vertically
+                        ) {
+                            Divider(
+                                modifier = Modifier.align(Alignment.CenterStart).padding(start = 4.dp, end = 4.dp, top = 8.dp), // Garis mulai dari kiri
+                                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.25f), // Warna garis
+                                thickness = 1.5.dp // Ketebalan garis
                             )
                         }
+                        Text(
+                            text = "$fat g", // Nilai yang ditampilkan di sebelah kanan
+                            fontSize = 14.sp,
+                            modifier = Modifier.align(Alignment.CenterVertically) // Right-aligned text
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Protein:",
+                            fontSize = 14.sp,
+                            modifier = Modifier.align(Alignment.CenterVertically) // Left-aligned text
+                        )
+                        Box(
+                            modifier = Modifier
+                                .weight(1f) // Garis mengisi sisa ruang
+                                .align(Alignment.CenterVertically) // Align center vertically
+                        ) {
+                            Divider(
+                                modifier = Modifier.align(Alignment.CenterStart).padding(start = 4.dp, end = 4.dp, top = 8.dp), // Garis mulai dari kiri
+                                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.25f), // Warna garis
+                                thickness = 1.5.dp // Ketebalan garis
+                            )
+                        }
+                        Text(
+                            text = "$protein g", // Nilai yang ditampilkan di sebelah kanan
+                            fontSize = 14.sp,
+                            modifier = Modifier.align(Alignment.CenterVertically) // Right-aligned text
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Carbs:",
+                            fontSize = 14.sp,
+                            modifier = Modifier.align(Alignment.CenterVertically) // Left-aligned text
+                        )
+                        Box(
+                            modifier = Modifier
+                                .weight(1f) // Garis mengisi sisa ruang
+                                .align(Alignment.CenterVertically) // Align center vertically
+                        ) {
+                            Divider(
+                                modifier = Modifier.align(Alignment.CenterStart).padding(start = 4.dp, end = 4.dp, top = 8.dp), // Garis mulai dari kiri
+                                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.25f), // Warna garis
+                                thickness = 1.5.dp // Ketebalan garis
+                            )
+                        }
+                        Text(
+                            text = "$carbs g", // Nilai yang ditampilkan di sebelah kanan
+                            fontSize = 14.sp,
+                            modifier = Modifier.align(Alignment.CenterVertically) // Right-aligned text
+                        )
+                    }
+
                 }
+            }
         }
+    }
 }

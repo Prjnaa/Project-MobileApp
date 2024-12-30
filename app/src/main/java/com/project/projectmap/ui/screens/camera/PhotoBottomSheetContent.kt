@@ -2,6 +2,7 @@ package com.project.projectmap.ui.screens.camera
 
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -405,33 +406,50 @@ fun EditableNutrientInfo(name: String, amount: Float, onValueChange: (Float) -> 
 }
 
 fun addCoins(uid: String, db: FirebaseFirestore, calories: Float, fat: Float, protein: Float, carbs: Float): Int {
-    var coinsToAdd = 0
+    var coinsToAdd: Int
 
     val proteinRatio = protein / calories
     val fatRatio = fat / calories
     val carbsRatio = carbs / calories
 
-    if (proteinRatio > fatRatio && proteinRatio > carbsRatio) {
-        // Food with the highest protein-to-calorie ratio is considered the healthiest
-        coinsToAdd = (calories / 7).toInt() // Add more coins for healthier food
-    } else if (fatRatio > proteinRatio && fatRatio > carbsRatio) {
-        // Food with the highest fat-to-calorie ratio
-        coinsToAdd = (calories / 10).toInt() // Add fewer coins for higher fat content
-    } else {
-        // Food with the highest carbs-to-calorie ratio
-        coinsToAdd = (calories / 8).toInt() // Add coins for balanced or carb-heavy food
+    coinsToAdd = when {
+        proteinRatio > fatRatio && proteinRatio > carbsRatio -> {
+            (calories / 7).toInt() // More coins for high protein
+        }
+        fatRatio > proteinRatio && fatRatio > carbsRatio -> {
+            (calories / 10).toInt() // Fewer coins for high fat
+        }
+        else -> {
+            (calories / 8).toInt() // Balanced for high carbs
+        }
     }
 
+
     CoroutineScope(Dispatchers.IO).launch {
+        val currentDate = getCurrentDate()
         val userRef = db.collection("users").document(uid)
+        val intakeRef = db.collection("intakes").document("${uid}-${currentDate}")
 
         try {
             val document = userRef.get().await()
 
             if (document.exists()) {
-                val user = document.toObject(User::class.java)
-                user?.let {
-                    val updatedUser = it.addCoins(coinsToAdd)
+                val userObj = document.toObject(User::class.java)
+                userObj?.let { user ->
+                    val calorieTarget = user.targets.calorieTarget
+
+                    val intakeSnapshot = intakeRef.get().await()
+                    if(intakeSnapshot.exists()) {
+                        val currentCalories = intakeSnapshot.getDouble("totalCalories") ?: 0.0
+
+                        coinsToAdd = if (currentCalories > calorieTarget) {
+                            ((coinsToAdd * 0.25).toInt()).coerceAtLeast(0)
+                        } else {
+                            coinsToAdd
+                        }
+                    }
+
+                    val updatedUser = user.addCoins(coinsToAdd)
                     userRef.set(updatedUser).await()
                 }
             }
