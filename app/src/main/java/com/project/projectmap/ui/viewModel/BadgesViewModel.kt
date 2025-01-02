@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.project.projectmap.R
 import com.project.projectmap.firebase.model.User
 import com.project.projectmap.ui.screens.badges.Item
 import kotlinx.coroutines.delay
@@ -60,18 +61,31 @@ class BadgesViewModel : ViewModel() {
 
     private fun loadDummyItems() {
         val dummyItems = listOf(
-            Item(id = "item1", name = "Teddy Bear", price = 10, category = "Toys"),
-            Item(id = "item2", name = "Rubber Duck", price = 20, category = "Toys"),
-            Item(id = "item3", name = "Beach Ball", price = 30, category = "Toys"),
-            Item(id = "item4", name = "Carrot", price = 15, category = "Foods"),
-            Item(id = "item5", name = "Apple", price = 25, category = "Foods"),
-            Item(id = "item6", name = "Banana", price = 35, category = "Foods"),
-            Item(id = "item7", name = "Orange Juice", price = 20, category = "Drinks"),
-            Item(id = "item8", name = "Milkshake", price = 30, category = "Drinks"),
-            Item(id = "item9", name = "Lemonade", price = 40, category = "Drinks")
+            Item(
+                id = "tanaman1",
+                name = "Tanaman 1",
+                price = 10,
+                category = "Tanaman",
+                imageRes = R.drawable.tanaman1
+            ),
+            Item(
+                id = "tanaman2",
+                name = "Tanaman 2",
+                price = 20,
+                category = "Tanaman",
+                imageRes = R.drawable.tanaman2
+            ),
+            Item(
+                id = "tanaman3",
+                name = "Tanaman 3",
+                price = 30,
+                category = "Tanaman",
+                imageRes = R.drawable.tanaman3
+            )
         )
         _items.value = dummyItems
     }
+
 
     fun buyItem(item: Item) {
         if (user.value.profile.coin >= item.price && !user.value.items.contains(item.id)) {

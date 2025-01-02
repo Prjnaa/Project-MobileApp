@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -57,21 +58,29 @@ import kotlinx.coroutines.launch
 import java.text.DecimalFormat
 import kotlin.math.abs
 
-data class Item(val id: String, val name: String, val price: Int, val category: String)
+data class Item(
+    val id: String,
+    val name: String,
+    val price: Int,
+    val category: String,
+    val imageRes: Int
+)
 
 @Composable
 fun BadgesPage(
     onClose: () -> Unit = {},
+    onWearThis: () -> Unit = {},
 ) {
     val viewModel: BadgesViewModel = viewModel()
     var currentPage by remember { mutableStateOf(0) }
-    val pages = listOf("Toys", "Foods", "Drinks")
+    val pages = listOf("Tanaman", "Foods", "Drinks")
     val lazyListState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val showInsufficientFundsMessage by viewModel.showInsufficientFundsMessage.collectAsState()
 
     val context = LocalContext.current
 
+    // Data user, status loading, error, dll.
     val user by viewModel.user.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
@@ -79,6 +88,7 @@ fun BadgesPage(
 
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // Format coin agar lebih ringkas (misal: 1.2k, 1.5M, dsb.)
     var formattedPts by remember { mutableStateOf<String?>("") }
     val userPtsFloat = user?.profile?.coin?.toFloat() ?: 0f
     val floatFormat = DecimalFormat("#.#")
@@ -108,6 +118,7 @@ fun BadgesPage(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
+            // Bagian menampilkan coin
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -145,6 +156,7 @@ fun BadgesPage(
                     }
                 }
 
+                // Tombol close
                 IconButton(
                     onClick = { onClose() },
                 ) {
@@ -170,21 +182,38 @@ fun BadgesPage(
                     color = MaterialTheme.colorScheme.primary,
                     textAlign = TextAlign.Center
                 )
-                Column {
-
-                }
 
                 Box(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .size(200.dp), // Tinggi minimal untuk menampung bunny dan item di dalam
                     contentAlignment = Alignment.Center
                 ) {
+                    // Bunny tetap center
                     Image(
                         painter = painterResource(id = R.drawable.char_bunny),
                         contentDescription = "Bunny with carrot",
                         modifier = Modifier.size(200.dp)
                     )
+
+                    // Cek item yang sedang di-equip
+                    val equippedItemObj = badgeItems.find { it.id == user?.equippedItem }
+
+                    // Hanya tampilkan kalau kategori item "Tanaman"
+                    if (equippedItemObj != null && equippedItemObj.category == "Tanaman") {
+                        Image(
+                            painter = painterResource(id = equippedItemObj.imageRes),
+                            contentDescription = equippedItemObj.name,
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)   // kiri bawah
+                                .size(120.dp)                  // perbesar ukuran
+                                .offset(x = 60.dp, y = (10).dp) // jika perlu geser sedikit
+                        )
+                    }
                 }
 
+
+                // Navigasi antar kategori (Tanaman, Foods, Drinks)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly,
@@ -201,7 +230,7 @@ fun BadgesPage(
                     )
 
                     Text(
-                        text = badgeItems.firstOrNull { it.category == pages[currentPage] }?.category ?: "",
+                        text = pages[currentPage],
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Medium,
                         textAlign = TextAlign.Center,
@@ -219,108 +248,131 @@ fun BadgesPage(
                     )
                 }
 
-                Box(
-                    modifier = Modifier
-                        .width(containerWidth)
-                        .padding(vertical = 24.dp)
-                ) {
-                    LazyRow(
-                        state = lazyListState,
-                        horizontalArrangement = Arrangement.spacedBy(itemSpacing),
-                        modifier = Modifier.fillMaxWidth()
+                // Jika halaman == "Tanaman", tampilkan item Tanaman
+                // Jika Foods/Drinks, tampilkan "Coming Soon {Category}"
+                if (pages[currentPage] == "Tanaman") {
+                    Box(
+                        modifier = Modifier
+                            .width(containerWidth)
+                            .padding(vertical = 24.dp)
                     ) {
-                        items(badgeItems.filter { it.category == pages[currentPage] }) { badgeItem ->
-                            val isOwned = user?.items?.contains(badgeItem.id) == true
-                            val isEquipped = user?.equippedItem == badgeItem.id
+                        LazyRow(
+                            state = lazyListState,
+                            horizontalArrangement = Arrangement.spacedBy(itemSpacing),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            items(badgeItems.filter { it.category == "Tanaman" }) { badgeItem ->
+                                val isOwned = user?.items?.contains(badgeItem.id) == true
+                                val isEquipped = user?.equippedItem == badgeItem.id
 
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(itemWidth)
-                                        .clip(CircleShape)
-                                        .background(Color.LightGray)
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(itemWidth)
+                                            .clip(CircleShape)
+                                    ) {
+                                        Image(
+                                            painter = painterResource(id = badgeItem.imageRes),
+                                            contentDescription = badgeItem.name,
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .clip(CircleShape)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
                                     Text(
-                                        text = badgeItem.name,
-                                        textAlign = TextAlign.Center,
-                                        modifier = Modifier.align(Alignment.Center)
+                                        text = "${badgeItem.price} coins",
+                                        fontSize = 12.sp
                                     )
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "${badgeItem.price} coins",
-                                    fontSize = 12.sp
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Button(
-                                    onClick = {
-                                        if (!isOwned) {
-                                            viewModel.buyItem(badgeItem)
-                                        } else {
-                                            viewModel.equipItem(badgeItem.id)
-                                        }
-                                    },
-                                    modifier = Modifier.height(32.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = when {
-                                            !isOwned -> MaterialTheme.colorScheme.primary
-                                            isEquipped -> MaterialTheme.colorScheme.tertiary
-                                            else -> MaterialTheme.colorScheme.secondary
-                                        }
-                                    ),
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Text(
-                                        text = when {
-                                            !isOwned -> "Buy"
-                                            isEquipped -> "Used"
-                                            else -> "Use"
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Button(
+                                        onClick = {
+                                            if (!isOwned) {
+                                                viewModel.buyItem(badgeItem)
+                                            } else {
+                                                viewModel.equipItem(badgeItem.id)
+                                            }
                                         },
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = when {
-                                            !isOwned || isEquipped -> Color.White
-                                            else -> MaterialTheme.colorScheme.onSecondary
+                                        modifier = Modifier.height(32.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = when {
+                                                !isOwned -> MaterialTheme.colorScheme.primary
+                                                isEquipped -> MaterialTheme.colorScheme.tertiary
+                                                else -> MaterialTheme.colorScheme.secondary
+                                            }
+                                        ),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text(
+                                            text = when {
+                                                !isOwned -> "Buy"
+                                                isEquipped -> "Used"
+                                                else -> "Use"
+                                            },
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = when {
+                                                !isOwned || isEquipped -> Color.White
+                                                else -> MaterialTheme.colorScheme.onSecondary
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Efek animasi scroll (opsional, sama seperti sebelumnya)
+                        LaunchedEffect(lazyListState.isScrollInProgress) {
+                            if (!lazyListState.isScrollInProgress) {
+                                val visibleItems = lazyListState.layoutInfo.visibleItemsInfo
+                                if (visibleItems.isNotEmpty()) {
+                                    val firstVisibleItem = visibleItems.first()
+                                    val offset = firstVisibleItem.offset.toFloat()
+                                    val size = firstVisibleItem.size.toFloat()
+
+                                    if (abs(offset) > size * 0.2f && abs(offset) < size * 0.8f) {
+                                        val targetIndex = if (offset < 0) {
+                                            firstVisibleItem.index + 1
+                                        } else {
+                                            firstVisibleItem.index
                                         }
-                                    )
+
+                                        coroutineScope.launch {
+                                            lazyListState.animateScrollToItem(targetIndex)
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
-
-                    LaunchedEffect(lazyListState.isScrollInProgress) {
-                        if (!lazyListState.isScrollInProgress) {
-                            val visibleItems = lazyListState.layoutInfo.visibleItemsInfo
-                            if (visibleItems.isNotEmpty()) {
-                                val firstVisibleItem = visibleItems.first()
-                                val offset = firstVisibleItem.offset.toFloat()
-                                val size = firstVisibleItem.size.toFloat()
-
-                                if (abs(offset) > size * 0.2f && abs(offset) < size * 0.8f) {
-                                    val targetIndex = if (offset < 0) {
-                                        firstVisibleItem.index + 1
-                                    } else {
-                                        firstVisibleItem.index
-                                    }
-
-                                    coroutineScope.launch {
-                                        lazyListState.animateScrollToItem(targetIndex)
-                                    }
-                                }
-                            }
-                        }
+                } else {
+                    // Kategori Foods / Drinks => Coming Soon
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Coming Soon ${pages[currentPage]}",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
                     }
                 }
 
                 Button(
-                    onClick = { /* Implement wear functionality */ },
+                    onClick = {
+                        onWearThis()
+                    },
                     modifier = Modifier
                         .fillMaxWidth(0.8f)
                         .height(56.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                        containerColor = MaterialTheme.colorScheme.primary
                     ),
                     shape = RoundedCornerShape(16.dp)
                 ) {
@@ -331,23 +383,14 @@ fun BadgesPage(
                         color = Color.White
                     )
                 }
-
-                if (user?.equippedItem != null) {
-                    Text(
-                        text = "Equipped: ${user.equippedItem}",
-                        fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                }
             }
         }
 
+        // Tampilkan Toast bila koin tidak cukup
         LaunchedEffect(showInsufficientFundsMessage) {
             if (showInsufficientFundsMessage) {
                 Toast.makeText(context, "Insufficient funds to buy the item", Toast.LENGTH_SHORT).show()
             }
         }
     }
-
-
 }

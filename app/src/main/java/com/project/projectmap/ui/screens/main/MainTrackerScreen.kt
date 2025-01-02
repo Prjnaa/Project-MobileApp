@@ -67,14 +67,28 @@ fun MainTrackerScreen(
     onNavigateToCalendar: () -> Unit = {},
     onNavigateToBadges: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
-    onNavigateToNewTarget: () -> Unit = {},
-    viewModel: MainTrackerViewModel = MainTrackerViewModel()
+    onNavigateToNewTarget: () -> Unit = {}
 ) {
+
+    val viewModel = MainTrackerViewModel()
+
     val user by viewModel.user.collectAsState()
     val intake by viewModel.dailyIntake.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    // Daftar item intake
     val items = intake.items.values.toList()
+
+    // Dapatkan ID item yang di-equip dari Firestore
+    val equippedItemId = user.equippedItem
+
+    // Tentukan gambar aksesoris berdasarkan equippedItemId
+    val accessoryRes = when (equippedItemId) {
+        "tanaman1" -> R.drawable.tanaman1
+        "tanaman2" -> R.drawable.tanaman2
+        "tanaman3" -> R.drawable.tanaman3
+        else -> null
+    }
 
     Column(
         modifier =
@@ -111,7 +125,8 @@ fun MainTrackerScreen(
                     Tracker(
                         currentCalories = intake?.totalCalories?.toInt() ?: 0,
                         targetCalories = targetData.calorieTarget.toInt(),
-                        onNavToNewTarget = onNavigateToNewTarget)
+                        onNavToNewTarget = onNavigateToNewTarget,
+                        equippedItemDrawableRes = accessoryRes)
                 }
             }
 
@@ -244,42 +259,55 @@ fun CurrentStats(
         }
 }
 
+// Inilah fungsi Tracker yang tidak diubah layout aslinya, hanya ditambahkan aksesoris
 @Composable
 fun Tracker(
     currentCalories: Int = 999,
     targetCalories: Int = 9999,
-    onNavToNewTarget: () -> Unit = {}
+    onNavToNewTarget: () -> Unit = {},
+    equippedItemDrawableRes: Int? = null // parameter opsional untuk aksesoris
 ) {
     val context = LocalContext.current
 
     Column(
-        modifier = Modifier.fillMaxWidth().offset(y = (-42).dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .offset(y = (-42).dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.char_bunny),
-            contentDescription = "Calories Icon",
-            modifier = Modifier.scale(0.75f))
-        //        CHARACTER
-        //        ArObjectViewer(
-        //            modifier = Modifier
-        //                .fillMaxWidth()
-        //                .padding(top = 12.dp, bottom = 32.dp),
-        //            modelFilePath =
-        // "app/src/main/java/com/project/projectmap/assets/3d/bunny_blend.glb"
-        //        )
+        // Bungkus bunny + aksesoris dalam Box agar aksesoris menimpa bunny
+        Box(contentAlignment = Alignment.Center) {
+            // Bunny asli, ukuran & scale sama
+            Image(
+                painter = painterResource(id = R.drawable.char_bunny),
+                contentDescription = "Calories Icon",
+                modifier = Modifier.scale(0.75f)
+            )
 
-        //        MAIN CALORIE TRACKER
+            equippedItemDrawableRes?.let { res ->
+                Image(
+                    painter = painterResource(id = res),
+                    contentDescription = "Accessory",
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .size(150.dp)
+                        .offset(x = 10.dp, y = -25.dp)
+                )
+            }
+        }
+
+        // MAIN CALORIE TRACKER (tetap sama)
         CalorieTracker(current = currentCalories, target = targetCalories)
 
-        //        TRACK EAT BUTTONS
+        // TRACK EAT BUTTON (tetap sama)
         TrackEatButton(
             onLaunchCamera = {
                 val intent = Intent(context, CameraActivity::class.java)
-                context.startActivity(intent) // Launch the CameraActivity
-            })
+                context.startActivity(intent)
+            }
+        )
 
-        //        SET NEW TARGET
+        // SET NEW TARGET (tetap sama)
         SetNewTargetLink(onNavToNewTarget = onNavToNewTarget)
     }
 }

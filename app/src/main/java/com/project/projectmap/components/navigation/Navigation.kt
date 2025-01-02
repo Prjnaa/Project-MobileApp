@@ -153,9 +153,17 @@ fun Navigation(
             BadgesPage(
                 onClose = {
                     navController.popBackStack()
+                },
+                onWearThis = {
+                    // Navigasi ke MainTrackerScreen
+                    navController.navigate(AppDestinations.MAIN_ROUTE) {
+                        // Hapus BadgesPage dari backstack (opsional)
+                        popUpTo(AppDestinations.BADGES_ROUTE) { inclusive = true }
+                    }
                 }
             )
         }
+
 
 //        ROUTE FOR CALENDAR PAGE
         composable(AppDestinations.CALENDAR_ROUTE) {
