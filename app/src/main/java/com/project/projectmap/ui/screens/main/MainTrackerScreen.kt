@@ -104,16 +104,12 @@ fun MainTrackerScreen(
                 .background(colorResource(id = R.color.purple_200))
                 .matchParentSize()
                 .graphicsLayer {
-                    // 1) Perbesar 1.3x
-                    scaleX = 1.3f
-                    scaleY = 1.3f
+                    scaleX = 1.6f
+                    scaleY = 1.6f
 
-                    // 2) Pastikan pivot-nya di top-left (0f, 0f),
-                    //    sehingga yang "dikunci" adalah sudut kiri atas.
                     transformOrigin = TransformOrigin(0f, 0f)
 
-                    // 3) Geser = -scrollState.value (1:1) plus offset statis
-                    translationY = -scrollState.value.toFloat() - 600f
+                    translationY = -scrollState.value.toFloat() - 1450f
                 }
         )
 
