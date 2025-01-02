@@ -50,8 +50,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.toObject
 import com.project.projectmap.components.msc.ConstantsStyle
 import com.project.projectmap.firebase.model.DailyIntake
-import com.project.projectmap.firebase.model.User
-import com.project.projectmap.firebase.model.UserTargets
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -90,6 +88,7 @@ fun CalendarPage(onClose: () -> Unit) {
                             mapOf(
                                 "name" to value.name,
                                 "calories" to value.calories,
+                                "servingSize" to value.servingSize,
                                 "protein" to value.protein,
                                 "fat" to value.fat,
                                 "carbs" to value.carbs,
@@ -265,6 +264,7 @@ fun CalendarPage(onClose: () -> Unit) {
                                             title = history["name"]?.toString() ?: "Unknown",
                                             calories =
                                                 "${(history["calories"] as? Number)?.toInt() ?: 0}",
+                                            servingSize = history["servingSize"] as? Float ?: 0f,
                                             coinsAdded = history["plusCoins"] as? Int ?: 0,
                                             timestamp =
                                                 history["timestamp"] as? Long
@@ -286,6 +286,7 @@ fun HistoryItemCalendar(
     index: Int,
     title: String = "Default Title $index",
     calories: String,
+    servingSize: Float = 0f,
     coinsAdded: Int = 0,
     timestamp: Long,
     fat: Float,
@@ -329,6 +330,10 @@ fun HistoryItemCalendar(
                                                 MaterialTheme.colorScheme.onPrimary.copy(
                                                     alpha = 0.7f))
                                     }
+                                Text(
+                                    text = "$servingSize g",
+                                    fontSize = 16.sp,
+                                )
                                 Text(
                                     text = "$calories Calories",
                                     fontSize = 16.sp,

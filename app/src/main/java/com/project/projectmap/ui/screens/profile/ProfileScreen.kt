@@ -1,5 +1,8 @@
 package com.project.projectmap.ui.screens.profile
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,7 +27,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -31,9 +34,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,16 +45,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.project.projectmap.R
-import com.project.projectmap.components.msc.ConstantsStyle
+import com.project.projectmap.components.msc.PasswordInput
 import com.project.projectmap.firebase.model.Gender
 import com.project.projectmap.firebase.model.Profile
 import com.project.projectmap.firebase.model.User
@@ -63,7 +67,7 @@ fun ProfileScreen(onClose: () -> Unit, onLogout: () -> Unit) {
     val currentUser = auth.currentUser
 
     val db = FirebaseFirestore.getInstance()
-    val userRef = db.collection("users").document(currentUser?.uid ?: "")
+    val userRef = currentUser?.uid?.let { db.collection("users").document(it) }
 
     var userName by remember { mutableStateOf("") }
     var userEmail by remember { mutableStateOf("") }
@@ -71,21 +75,32 @@ fun ProfileScreen(onClose: () -> Unit, onLogout: () -> Unit) {
     var userGender by remember { mutableStateOf(Gender.Male) }
     var reminderInterval by remember { mutableStateOf(5 * 60 * 60 * 1000) }
     var userCoin by remember { mutableStateOf(0) }
+    var userPhotoUrl by remember { mutableStateOf("") }
 
     var isEditingProfile by remember { mutableStateOf(false) }
-    var isEditingReminders by remember { mutableStateOf(false) }
     var showPasswordDialog by remember { mutableStateOf(false) }
 
-    userRef.get().addOnSuccessListener { document ->
-        val user = document.toObject(User::class.java)
-        if (user != null) {
-            val profile = user.profile
-            userName = profile.name
-            userEmail = profile.email
-            userAge = profile.age
-            userGender = profile.gender
-            reminderInterval = profile.reminderInterval
-            userCoin = profile.coin
+    // Photo Picker Launcher
+    val photoPickerLauncher =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) {
+            uri: Uri? ->
+            uri?.let {
+                userPhotoUrl = it.toString()
+                userRef?.update("profile.photoUrl", userPhotoUrl)
+            }
+        }
+
+    LaunchedEffect(currentUser) {
+        userRef?.get()?.addOnSuccessListener { document ->
+            document.toObject(User::class.java)?.let { user ->
+                userName = user.profile.name
+                userEmail = user.profile.email
+                userAge = user.profile.age
+                userGender = user.profile.gender
+                reminderInterval = user.profile.reminderInterval
+                userCoin = user.profile.coin
+                userPhotoUrl = user.profile.photoUrl
+            }
         }
     }
 
@@ -93,11 +108,10 @@ fun ProfileScreen(onClose: () -> Unit, onLogout: () -> Unit) {
         modifier =
             Modifier.fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
-                .padding(ConstantsStyle.APP_PADDING_VAL)
+                .padding(16.dp)
                 .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(24.dp)) {
-            // Close Button
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 IconButton(onClick = onClose) {
                     Icon(
@@ -106,45 +120,51 @@ fun ProfileScreen(onClose: () -> Unit, onLogout: () -> Unit) {
                 }
             }
 
-            // Profile Picture Placeholder
-            Box(modifier = Modifier.size(100.dp).clip(CircleShape).background(Color.LightGray))
+            // Profile Photo with Edit Button
+            Box(contentAlignment = Alignment.BottomEnd, modifier = Modifier.size(120.dp)) {
+                AsyncImage(
+                    model = userPhotoUrl.ifEmpty { R.drawable.baseline_person_24 },
+                    contentDescription = "Profile Picture",
+                    modifier = Modifier.size(120.dp).clip(CircleShape).background(Color.Gray),
+                    contentScale = ContentScale.Crop)
+
+                IconButton(
+                    onClick = { photoPickerLauncher.launch("image/*") },
+                    modifier =
+                        Modifier.size(36.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary)) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.editable_24),
+                            contentDescription = "Edit Photo",
+                            tint = MaterialTheme.colorScheme.onPrimary)
+                    }
+            }
 
             Text(text = userName, fontSize = 32.sp, fontWeight = FontWeight.Bold)
 
-            // Profile Section
             ProfileSection(
                 title = "My Profile",
                 isEditing = isEditingProfile,
-                onEditClicked = { isEditingProfile = !isEditingProfile },
-                content = {
+                onEditClicked = { isEditingProfile = !isEditingProfile }) {
                     EditableProfileField("Name", userName, isEditingProfile) { userName = it }
                     EditableProfileField("Age", userAge.toString(), isEditingProfile) {
                         userAge = it.toIntOrNull() ?: userAge
                     }
                     GenderDropdownField(userGender, isEditingProfile) { userGender = it }
                     EditableProfileField("Email", userEmail, isEditingProfile) { userEmail = it }
-                })
-
-            // Reminder Section
-            //            ProfileSection(
-            //                title = "Reminders",
-            //                isEditing = isEditingReminders,
-            //                onEditClicked = { isEditingReminders = !isEditingReminders },
-            //                content = {
-            //                    EditableProfileField(
-            //                        "Reminder Interval (ms)", reminderInterval.toString(),
-            // isEditingReminders) {
-            //                            reminderInterval = it.toIntOrNull() ?: reminderInterval
-            //                        }
-            //                })
+                }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Save Button
             Button(
                 onClick = { showPasswordDialog = true },
-                enabled = isEditingProfile || isEditingReminders,
+                enabled = isEditingProfile,
                 modifier = Modifier.fillMaxWidth().height(48.dp),
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary,
+                        contentColor = MaterialTheme.colorScheme.onSecondary),
                 shape = RoundedCornerShape(16.dp)) {
                     Text("Save Changes")
                 }
@@ -160,17 +180,18 @@ fun ProfileScreen(onClose: () -> Unit, onLogout: () -> Unit) {
                                 gender = userGender,
                                 coin = userCoin,
                                 reminderInterval = reminderInterval)
-                        userRef.update("profile", updatedProfile)
-                        isEditingProfile = false
-                        isEditingReminders = false
-                        showPasswordDialog = false
+                        userRef?.update("profile", updatedProfile)?.addOnCompleteListener {
+                            if (it.isSuccessful) {
+                                isEditingProfile = false
+                                showPasswordDialog = false
+                            }
+                        }
                     },
                     onDismiss = { showPasswordDialog = false })
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Log Out Button
             Button(
                 onClick = onLogout,
                 modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -182,7 +203,6 @@ fun ProfileScreen(onClose: () -> Unit, onLogout: () -> Unit) {
         }
 }
 
-// Editable Field
 @Composable
 private fun EditableProfileField(
     label: String,
@@ -191,53 +211,33 @@ private fun EditableProfileField(
     onValueChange: (String) -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically) {
             Text(text = label, fontSize = 18.sp, fontWeight = FontWeight.Medium)
             if (isEditing) {
-                Box(
+                BasicTextField(
+                    value = value,
+                    onValueChange = onValueChange,
                     modifier =
-                        Modifier.fillMaxWidth()
-                            .padding(start = 12.dp)
-                            .border(
+                        Modifier.border(
                                 1.dp,
                                 MaterialTheme.colorScheme.onBackground.copy(0.5f),
-                                shape = RoundedCornerShape(ConstantsStyle.ROUNDED_CORNER_SM_VAL))) {
-                        BasicTextField(
-                            value = value,
-                            onValueChange = { newValue ->
-                                if (newValue != value) {
-                                    onValueChange(newValue) // Update nilai state hanya jika berubah
-                                }
-                            },
-                            modifier =
-                                Modifier.fillMaxWidth()
-                                    .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 8.dp),
-                            singleLine = true,
-                            textStyle =
-                                TextStyle(
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Normal,
-                                    color = MaterialTheme.colorScheme.onBackground,
-                                    textAlign = TextAlign.End,
-                                    letterSpacing = 0.5.sp))
-                    }
+                                RoundedCornerShape(8.dp))
+                            .padding(8.dp)
+                            .width(225.dp),
+                    singleLine = true,
+                    textStyle =
+                        TextStyle(
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Normal,
+                            color = MaterialTheme.colorScheme.onBackground))
             } else {
-                Box(modifier = Modifier.weight(1f).align(Alignment.CenterVertically)) {
-                    Divider(
-                        modifier =
-                            Modifier.align(Alignment.CenterStart)
-                                .padding(start = 4.dp, end = 4.dp, top = 8.dp),
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.25f),
-                        thickness = 1.5.dp)
-                }
                 Text(text = value, fontSize = 18.sp, fontWeight = FontWeight.Normal)
             }
         }
 }
 
-// Gender Dropdown
 @Composable
 private fun GenderDropdownField(
     selectedGender: Gender,
@@ -246,44 +246,34 @@ private fun GenderDropdownField(
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    Box(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().clickable(enabled = isEditing) { expanded = true },
-            horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(text = "Gender", fontSize = 18.sp)
-                Row {
-                    Text(text = selectedGender.name, fontSize = 18.sp)
-                    if (isEditing) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.arrow_down_24),
-                            contentDescription = "Dropdown Arrow",
-                            tint = MaterialTheme.colorScheme.onBackground)
-                    }
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable(enabled = isEditing) { expanded = true },
+        horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(text = "Gender", fontSize = 18.sp)
+            Row {
+                Text(text = selectedGender.name, fontSize = 18.sp)
+                if (isEditing) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.arrow_down_24),
+                        contentDescription = "Dropdown Arrow",
+                        tint = MaterialTheme.colorScheme.onBackground)
                 }
             }
-
-        Box(
-            modifier =
-                Modifier.shadow(4.dp, shape = RoundedCornerShape(8.dp))
-                    .clip(RoundedCornerShape(8.dp)),
-        ) {
-            DropdownMenu(
-                expanded = expanded,
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                onDismissRequest = { expanded = false }) {
-                    Gender.values().forEach { gender ->
-                        DropdownMenuItem(
-                            text = {
-                                Text(gender.name, color = MaterialTheme.colorScheme.secondary)
-                            },
-                            onClick = {
-                                onGenderSelected(gender)
-                                expanded = false
-                            })
-                    }
-                }
         }
-    }
+
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = { expanded = false },
+        modifier = Modifier.shadow(4.dp).clip(RoundedCornerShape(8.dp))) {
+            Gender.values().forEach { gender ->
+                DropdownMenuItem(
+                    text = { Text(gender.name) },
+                    onClick = {
+                        onGenderSelected(gender)
+                        expanded = false
+                    })
+            }
+        }
 }
 
 @Composable
@@ -299,23 +289,21 @@ private fun ProfileSection(
             CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
         shape = RoundedCornerShape(16.dp)) {
             Column(
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .padding(start = 20.dp, top = 12.dp, end = 20.dp, bottom = 12.dp),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = title, fontWeight = FontWeight.Bold, fontSize = 24.sp)
-                        if (!isEditing) {
-                            TextButton(onClick = onEditClicked) { Text("Edit") }
-                        } else {
-                            TextButton(onClick = onEditClicked) { Text("Cancel") }
+                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp, horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = title, fontWeight = FontWeight.Bold, fontSize = 24.sp)
+                            TextButton(onClick = onEditClicked) {
+                                Text(
+                                    text = if (isEditing) "Cancel" else "Edit",
+                                    textDecoration = TextDecoration.Underline)
+                            }
                         }
-                    }
-                content()
-            }
+                    content()
+                }
         }
 }
 
@@ -325,19 +313,18 @@ private fun PasswordDialog(onPasswordEntered: (String) -> Unit, onDismiss: () ->
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        confirmButton = { Button(onClick = { onPasswordEntered(password) }) { Text("Confirm") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
-        title = { Text("Enter Password") },
+        title = { Text(text = "Enter Password") },
         text = {
-            TextField(
-                value = password,
-                onValueChange = { password = it },
-                placeholder = { Text("Password") },
-                singleLine = true,
-                colors =
-                    TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent))
-        })
+            Column {
+                Text("Please enter your password to save changes.")
+                PasswordInput(
+                    password = password,
+                    onPasswordChange = { password = it },
+                    modifier = Modifier.padding(top = 16.dp))
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onPasswordEntered(password) }) { Text("Confirm") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } })
 }
