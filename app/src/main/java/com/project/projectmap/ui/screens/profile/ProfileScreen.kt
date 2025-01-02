@@ -1,5 +1,6 @@
 package com.project.projectmap.ui.screens.profile
 
+import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -63,6 +64,9 @@ import com.project.projectmap.components.msc.PasswordInput
 import com.project.projectmap.firebase.model.Gender
 import com.project.projectmap.firebase.model.Profile
 import com.project.projectmap.firebase.model.User
+import java.io.File
+import java.io.FileOutputStream
+import java.io.InputStream
 
 @Composable
 fun ProfileScreen(onClose: () -> Unit, onLogout: () -> Unit) {
@@ -83,13 +87,20 @@ fun ProfileScreen(onClose: () -> Unit, onLogout: () -> Unit) {
     var isEditingProfile by remember { mutableStateOf(false) }
     var showPasswordDialog by remember { mutableStateOf(false) }
 
+
+    val context = LocalContext.current
     // Photo Picker Launcher
     val photoPickerLauncher =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) {
             uri: Uri? ->
             uri?.let {
-                userPhotoUrl = it.toString()
-                userRef?.update("profile.photoUrl", userPhotoUrl)
+                val localPath = saveUriToInternalStorage(context, it, "profile_picture.jpg")
+                if (localPath != null) {
+                    userPhotoUrl = localPath
+                    userRef?.update("profile.photoUrl", localPath)
+                } else {
+                    Log.e("ProfileScreen", "Failed to save photo locally.")
+                }
             }
         }
 
@@ -105,7 +116,9 @@ fun ProfileScreen(onClose: () -> Unit, onLogout: () -> Unit) {
                 userPhotoUrl = user.profile.photoUrl
             }
 
-            Log.d("ProfileScreen", "User data loaded : $userName, $userEmail, $userAge, $userGender, $reminderInterval, $userCoin, $userPhotoUrl")
+            Log.d(
+                "ProfileScreen",
+                "User data loaded : $userName, $userEmail, $userAge, $userGender, $reminderInterval, $userCoin, $userPhotoUrl")
         }
     }
 
@@ -128,16 +141,13 @@ fun ProfileScreen(onClose: () -> Unit, onLogout: () -> Unit) {
             // Profile Photo with Edit Button
             Box(contentAlignment = Alignment.BottomEnd, modifier = Modifier.size(120.dp)) {
                 AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(userPhotoUrl)
-                        .build(),
+                    model =
+                        ImageRequest.Builder(context)
+                            .data(if (userPhotoUrl.isNotEmpty()) File(userPhotoUrl) else null)
+                            .build(),
                     contentDescription = "Profile Picture",
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape)
-                        .background(Color.Gray),
-                    contentScale = ContentScale.Crop
-                )
+                    modifier = Modifier.size(120.dp).clip(CircleShape).background(Color.Gray),
+                    contentScale = ContentScale.Crop)
                 IconButton(
                     onClick = { photoPickerLauncher.launch("image/*") },
                     modifier =
@@ -189,6 +199,7 @@ fun ProfileScreen(onClose: () -> Unit, onLogout: () -> Unit) {
                                 age = userAge,
                                 gender = userGender,
                                 coin = userCoin,
+                                photoUrl = userPhotoUrl,
                                 reminderInterval = reminderInterval)
                         userRef?.update("profile", updatedProfile)?.addOnCompleteListener {
                             if (it.isSuccessful) {
@@ -337,4 +348,19 @@ private fun PasswordDialog(onPasswordEntered: (String) -> Unit, onDismiss: () ->
             TextButton(onClick = { onPasswordEntered(password) }) { Text("Confirm") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } })
+}
+
+fun saveUriToInternalStorage(context: Context, uri: Uri, fileName: String): String? {
+    return try {
+        val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
+        val file = File(context.filesDir, fileName)
+        val outputStream = FileOutputStream(file)
+        inputStream?.copyTo(outputStream)
+        inputStream?.close()
+        outputStream.close()
+        file.absolutePath
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
 }
