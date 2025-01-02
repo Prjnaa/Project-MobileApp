@@ -39,3 +39,4 @@ karakter sehingga nanti pengguna bisa memperindah atau mempercantik karakter nya
 14. Google sign-in
 
 Link Video Presentasi: https://drive.google.com/drive/folders/1JydDVHLXj4OWqOHdwdZcWqZLhZieR6Kp?usp=drive_link
+Link Github: https://github.com/Prjnaa/Project-MobileApp.git
