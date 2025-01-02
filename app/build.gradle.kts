@@ -7,7 +7,7 @@ plugins {
     alias(libs.plugins.google.gms.google.services)
 }
 
-val secretPropertiesFile = rootProject.file("secret.properties")
+val secretPropertiesFile = rootProject.file("secrets.properties")
 val secretProperties = Properties()
 if (secretPropertiesFile.exists()) {
     secretProperties.load(FileInputStream(secretPropertiesFile))
@@ -101,7 +101,6 @@ dependencies {
     implementation(libs.androidx.camera.extensions)
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.play.services.base)
-    implementation(libs.play.services.auth.v2010)
 
     implementation(libs.litert)
     implementation(libs.litert.gpu)
@@ -110,19 +109,13 @@ dependencies {
     implementation(libs.litert.gpu.api)
     implementation(libs.litert.support.api)
 
-    implementation(libs.okhttp)
-
     // Firebase dependencies
     implementation(libs.firebase.auth.ktx)
-    implementation(libs.firebase.firestore.ktx.v2481)
-//
-//    implementation("com.google.ar:core:1.15.0") {
-//        exclude(group = "com.android.support", module = "support-compat")
-//    }
-//    implementation("com.google.ar.sceneform.ux:sceneform-ux:1.15.0") {
-//        exclude(group = "com.android.support", module = "support-compat")
-//    }
-//    implementation("com.google.ar.sceneform:core:1.15.0") {
-//        exclude(group = "com.android.support", module = "support-compat")
-//    }
+
+    implementation(libs.okhttp)
+
+//    DataStore
+    implementation(libs.androidx.datastore.preferences)
+
 }
+
