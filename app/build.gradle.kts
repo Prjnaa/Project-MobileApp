@@ -112,8 +112,8 @@ dependencies {
     // Firebase dependencies
     implementation(libs.firebase.auth.ktx)
 
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation(libs.okhttp)
 
-    implementation("io.coil-kt:coil-compose:2.2.2")
+    implementation(libs.coil.compose)
 }
 
