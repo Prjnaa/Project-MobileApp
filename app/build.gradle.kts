@@ -112,10 +112,10 @@ dependencies {
     // Firebase dependencies
     implementation(libs.firebase.auth.ktx)
 
-    implementation(libs.okhttp)
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
 //    DataStore
-    implementation(libs.androidx.datastore.preferences)
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
 
 }
 

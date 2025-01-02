@@ -45,7 +45,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.buildAnnotatedString
@@ -77,25 +76,19 @@ fun MainTrackerScreen(
     val errorMessage by viewModel.errorMessage.collectAsState()
     val items = intake.items.values.toList()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
-        // Konten Utama
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
+    Column(
+        modifier =
+            Modifier.fillMaxSize()
+                .background(color = MaterialTheme.colorScheme.background)
                 .padding(ConstantsStyle.APP_PADDING_VAL)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
+        verticalArrangement = Arrangement.spacedBy(24.dp)) {
             user?.let { userInfo ->
                 TopBar(
                     onNavToBadges = onNavigateToBadges,
                     onNavToProfile = onNavigateToProfile,
                     userName = userInfo.profile.name,
-                    usersPoints = userInfo.profile.coin
-                )
+                    usersPoints = userInfo.profile.coin)
             }
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
@@ -103,8 +96,7 @@ fun MainTrackerScreen(
                 Text(
                     errorMessage ?: "Error",
                     color = Color.Red,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
+                    modifier = Modifier.align(Alignment.CenterHorizontally))
             } else {
                 intake?.let { data ->
                     CurrentStats(
@@ -113,23 +105,19 @@ fun MainTrackerScreen(
                         fatProgress = data.totalFat,
                         carbsTarget = user.targets?.carbsTarget ?: 0f,
                         proteinTarget = user.targets?.proteinTarget ?: 0f,
-                        fatTarget = user.targets?.fatTarget ?: 0f
-                    )
+                        fatTarget = user.targets?.fatTarget ?: 0f)
                 }
                 user.targets?.let { targetData ->
                     Tracker(
                         currentCalories = intake?.totalCalories?.toInt() ?: 0,
                         targetCalories = targetData.calorieTarget.toInt(),
-                        onNavToNewTarget = onNavigateToNewTarget
-                    )
+                        onNavToNewTarget = onNavigateToNewTarget)
                 }
             }
 
             HistoryList(onNavToCalendar = onNavigateToCalendar, items = items)
         }
-    }
 }
-
 
 @Composable
 fun TopBar(
@@ -265,7 +253,7 @@ fun Tracker(
     val context = LocalContext.current
 
     Column(
-        modifier = Modifier.fillMaxWidth().offset(y = (-60).dp),
+        modifier = Modifier.fillMaxWidth().offset(y = (-42).dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Image(

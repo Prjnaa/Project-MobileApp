@@ -1,11 +1,13 @@
 package com.project.projectmap.firebase.model
 
+import android.content.ClipData.Item
+
 data class User(
     val profile: Profile = Profile(),
-    val targets: UserTargets = UserTargets(),
+    val targets: UserTargets = UserTargets()
     val equippedItem: String? = null,
     val items: List<String> = emptyList()
-) {
+){
     fun addCoins(coins: Int): User {
         val updateProfile = profile.copy(coin = profile.coin + coins)
         return this.copy(profile = updateProfile)

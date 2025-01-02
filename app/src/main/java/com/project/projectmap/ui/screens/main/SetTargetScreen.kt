@@ -42,7 +42,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.project.projectmap.R
 import com.project.projectmap.components.msc.ConstantsStyle
-import com.project.projectmap.firebase.model.Profile
 import com.project.projectmap.firebase.model.User
 import com.project.projectmap.firebase.model.UserTargets
 import java.util.Date

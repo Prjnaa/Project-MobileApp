@@ -3,7 +3,6 @@ package com.project.projectmap.components.navigation
 import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -14,7 +13,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.firestore.ListenerRegistration
 import com.project.projectmap.ui.screens.auth.login.LoginScreen
 import com.project.projectmap.ui.screens.auth.register.RegisterScreen
 import com.project.projectmap.ui.screens.badges.BadgesPage
@@ -22,9 +20,13 @@ import com.project.projectmap.ui.screens.calendar.CalendarPage
 import com.project.projectmap.ui.screens.main.MainTrackerScreen
 import com.project.projectmap.ui.screens.main.SetTargetScreen
 import com.project.projectmap.ui.screens.profile.ProfileScreen
-import com.project.projectmap.utilities.getCachedUserId
-import com.project.projectmap.utilities.isSessionExpired
-import com.project.projectmap.utilities.listenToUserDeletion
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+
+//import com.project.projectmap.utilities.getCachedUserId
+//import com.project.projectmap.utilities.isSessionExpired
+//import com.project.projectmap.utilities.listenToUserDeletion
 
 
 object AppDestinations {
@@ -44,36 +46,15 @@ fun Navigation(
 ) {
     val auth = FirebaseAuth.getInstance()
     val currentUser = auth.currentUser
+
+    Log.d("NAVSPACE", "Current User: ${currentUser}")
+
     var startDestination by remember { mutableStateOf(AppDestinations.MAIN_ROUTE) }
-    var sessionExpired by remember { mutableStateOf(false) }
-    var userDeletionListener by remember { mutableStateOf<ListenerRegistration?>(null) }
 
-    LaunchedEffect(currentUser) {
-        val cachedUserId = getCachedUserId(context)
-        sessionExpired = isSessionExpired(context)
-
-        Log.d("NavigationSpace", "Cached User ID: ${getCachedUserId(context)}")
-        Log.d("NavigationSpace", "Session Expired: $sessionExpired")
-        Log.d("NavigationSpace", "Current User: $currentUser")
-
-
-        if (cachedUserId != null) {
-            userDeletionListener?.remove()
-            userDeletionListener = listenToUserDeletion(cachedUserId) {
-                FirebaseAuth.getInstance().signOut()
-                clearCachedUserData(context)
-                startDestination = AppDestinations.LOGIN_ROUTE
-            }
-
-            startDestination = when {
-                sessionExpired -> AppDestinations.LOGIN_ROUTE
-                currentUser != null -> AppDestinations.MAIN_ROUTE
-                else -> AppDestinations.LOGIN_ROUTE
-            }
-        } else {
-            startDestination = AppDestinations.LOGIN_ROUTE
-        }
+    if (currentUser == null) {
+        startDestination = AppDestinations.LOGIN_ROUTE
     }
+
 
     NavHost(
         navController = navController,
