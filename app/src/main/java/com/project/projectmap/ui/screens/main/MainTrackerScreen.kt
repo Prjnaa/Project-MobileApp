@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,6 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -42,6 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
@@ -51,13 +52,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.rememberImagePainter
 import com.google.firebase.auth.FirebaseAuth
 import com.project.projectmap.R
 import com.project.projectmap.components.msc.ConstantsStyle
@@ -85,84 +85,79 @@ fun MainTrackerScreen(
 
     // Dapatkan ID item yang di-equip dari Firestore
     val equippedItemId = user.equippedItem
-    val accessoryRes = when (equippedItemId) {
-        "tanaman1" -> R.drawable.tanaman1
-        "tanaman2" -> R.drawable.tanaman2
-        "tanaman3" -> R.drawable.tanaman3
-        else -> null
-    }
+    val accessoryRes =
+        when (equippedItemId) {
+            "tanaman1" -> R.drawable.tanaman1
+            "tanaman2" -> R.drawable.tanaman2
+            "tanaman3" -> R.drawable.tanaman3
+            else -> null
+        }
 
     val scrollState = rememberScrollState()
 
     Box(modifier = Modifier.fillMaxSize()) {
-
         Image(
             painter = painterResource(id = R.drawable.background),
             contentDescription = "Moving Background",
             contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .background(colorResource(id = R.color.purple_200))
-                .matchParentSize()
-                .graphicsLayer {
-                    scaleX = 1.6f
-                    scaleY = 1.6f
+            modifier =
+                Modifier.background(colorResource(id = R.color.main_tracker_bg))
+                    .matchParentSize()
+                    .graphicsLayer {
+                        scaleX = 1.1f
+                        scaleY = 1.1f
 
-                    transformOrigin = TransformOrigin(0f, 0f)
+                        transformOrigin = TransformOrigin(0f, 0f)
 
-                    translationY = -scrollState.value.toFloat() - 1450f
-                }
-        )
-
+                        translationY = -scrollState.value.toFloat() - 550f
+                    })
 
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(ConstantsStyle.APP_PADDING_VAL)
-                .verticalScroll(scrollState),                      // <-- Pakai scrollState yg sama
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            user?.let { userInfo ->
-                TopBar(
-                    onNavToBadges = onNavigateToBadges,
-                    onNavToProfile = onNavigateToProfile,
-                    userName = userInfo.profile.name,
-                    usersPoints = userInfo.profile.coin
-                )
-            }
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-            } else if (errorMessage != null) {
-                Text(
-                    errorMessage ?: "Error",
-                    color = Color.Red,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
-            } else {
-                intake?.let { data ->
-                    CurrentStats(
-                        carbsProgress = data.totalCarbs,
-                        proteinProgress = data.totalProtein,
-                        fatProgress = data.totalFat,
-                        carbsTarget = user.targets?.carbsTarget ?: 0f,
-                        proteinTarget = user.targets?.proteinTarget ?: 0f,
-                        fatTarget = user.targets?.fatTarget ?: 0f
+            modifier =
+                Modifier.fillMaxSize()
+                    .padding(ConstantsStyle.APP_PADDING_VAL)
+                    .verticalScroll(scrollState), // <-- Pakai scrollState yg sama
+            verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                user?.let { userInfo ->
+                    TopBar(
+                        onNavToBadges = onNavigateToBadges,
+                        onNavToProfile = onNavigateToProfile,
+                        userName = userInfo.profile.name,
+                        usersPoints = userInfo.profile.coin,
+                        profilePicturePath = userInfo.profile.photoUrl
                     )
                 }
-                user.targets?.let { targetData ->
-                    Tracker(
-                        currentCalories = intake?.totalCalories?.toInt() ?: 0,
-                        targetCalories = targetData.calorieTarget.toInt(),
-                        onNavToNewTarget = onNavigateToNewTarget,
-                        equippedItemDrawableRes = accessoryRes
-                    )
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.CenterHorizontally))
+                } else if (errorMessage != null) {
+                    Text(
+                        errorMessage ?: "Error",
+                        color = Color.Red,
+                        modifier = Modifier.align(Alignment.CenterHorizontally))
+                } else {
+                    intake?.let { data ->
+                        CurrentStats(
+                            carbsProgress = data.totalCarbs,
+                            proteinProgress = data.totalProtein,
+                            fatProgress = data.totalFat,
+                            carbsTarget = user.targets?.carbsTarget ?: 0f,
+                            proteinTarget = user.targets?.proteinTarget ?: 0f,
+                            fatTarget = user.targets?.fatTarget ?: 0f)
+                    }
+                    user.targets?.let { targetData ->
+                        Tracker(
+                            currentCalories = intake?.totalCalories?.toInt() ?: 0,
+                            targetCalories = targetData.calorieTarget.toInt(),
+                            onNavToNewTarget = onNavigateToNewTarget,
+                            equippedItemDrawableRes = accessoryRes)
+                    }
                 }
-            }
 
-            HistoryList(onNavToCalendar = onNavigateToCalendar, items = items)
-        }
+                HistoryList(onNavToCalendar = onNavigateToCalendar, items = items)
+            }
     }
 }
-
 
 @Composable
 fun TopBar(
@@ -170,6 +165,7 @@ fun TopBar(
     onNavToProfile: () -> Unit = {},
     userName: String = "user",
     usersPoints: Int = 0,
+    profilePicturePath: String = ""
 ) {
     var formattedPts by remember { mutableStateOf<String?>("") }
     val userPtsFloat = usersPoints.toFloat()
@@ -204,52 +200,44 @@ fun TopBar(
                 horizontalArrangement = Arrangement.SpaceBetween) {
                     //            NAVIGATE TO PROFILE BUTTON
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.clickable { onNavToProfile() }) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.baseline_person_24),
-                                contentDescription = "User Icon",
-                                tint = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(36.dp))
+                            Image(
+                                painter =
+                                    rememberImagePainter(
+                                        data = profilePicturePath,
+                                        builder = {
+                                            crossfade(true) // Transisi lembut saat memuat gambar
+                                            placeholder(
+                                                R.drawable
+                                                    .baseline_person_24) // Placeholder saat gambar
+                                                                         // sedang dimuat
+                                            error(
+                                                R.drawable
+                                                    .baseline_person_24) // Gambar default jika URI
+                                                                         // tidak valid
+                                            fallback(
+                                                R.drawable
+                                                    .baseline_person_24) // Gambar default jika data
+                                                                         // null
+                                        }),
+                                contentDescription = "User Profile Photo",
+                                contentScale = ContentScale.Crop,
+                                modifier =
+                                    Modifier.size(42.dp)
+                                        .clip(CircleShape) // Membuat gambar berbentuk lingkaran
+                                )
                             Text(
-                                text = userName,
+                                text = userName.split(" ").firstOrNull() ?: "",
                                 fontSize = 20.sp,
                                 color = MaterialTheme.colorScheme.onPrimary,
                                 fontWeight = FontWeight.Medium)
                         }
 
-                    // Button Section
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalAlignment = Alignment.CenterVertically) {
-
-                            //                Row(
-                            //                    verticalAlignment = Alignment.CenterVertically,
-                            //                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            //                ) {
-                            //                    Icon(
-                            //                        painter = painterResource(id =
-                            // R.drawable.streak_icon_24),
-                            //                        contentDescription = "Streak Icon",
-                            //                        tint = MaterialTheme.colorScheme.onPrimary,
-                            //                        modifier = Modifier.size(30.dp)
-                            //                    )
-                            //                    Text(
-                            //                        text = "200",
-                            //                        fontSize = 18.sp,
-                            //                        fontWeight = FontWeight.Medium
-                            //                    )
-                            //                }
-
-                            //                VerticalDivider(
-                            //                    thickness = 2.dp,
-                            //                    color =
-                            // MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
-                            //                    modifier = Modifier.padding(vertical = 10.dp)
-                            //                )
-
-                            //                NAVIGATE TO BADGES BUTTON
                             Row(
                                 modifier = Modifier.clickable { onNavToBadges() },
                                 verticalAlignment = Alignment.CenterVertically,
@@ -300,9 +288,7 @@ fun Tracker(
     val context = LocalContext.current
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .offset(y = (-42).dp),
+        modifier = Modifier.fillMaxWidth().offset(y = (-48).dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // Bungkus bunny + aksesoris dalam Box agar aksesoris menimpa bunny
@@ -311,18 +297,16 @@ fun Tracker(
             Image(
                 painter = painterResource(id = R.drawable.char_bunny),
                 contentDescription = "Calories Icon",
-                modifier = Modifier.scale(0.75f)
-            )
+                modifier = Modifier.scale(0.75f))
 
             equippedItemDrawableRes?.let { res ->
                 Image(
                     painter = painterResource(id = res),
                     contentDescription = "Accessory",
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .size(150.dp)
-                        .offset(x = 10.dp, y = -25.dp)
-                )
+                    modifier =
+                        Modifier.align(Alignment.BottomStart)
+                            .size(150.dp)
+                            .offset(x = 10.dp, y = -25.dp))
             }
         }
 
@@ -334,8 +318,7 @@ fun Tracker(
             onLaunchCamera = {
                 val intent = Intent(context, CameraActivity::class.java)
                 context.startActivity(intent)
-            }
-        )
+            })
 
         // SET NEW TARGET (tetap sama)
         SetNewTargetLink(onNavToNewTarget = onNavToNewTarget)
@@ -397,16 +380,17 @@ fun HistoryList(onNavToCalendar: () -> Unit = {}, items: List<FoodItem>) {
                                     index = index,
                                     title = item.name,
                                     calories = item.calories.roundToInt().toString(),
+                                    servingSize = item.servingSize,
                                     coinsAdded = item.plusCoins,
                                     timestamp = item.timestamp,
-                                    carbs = item.carbs,
                                     fat = item.fat,
                                     protein = item.protein,
+                                    carbs = item.carbs,
                                     isExpanded = expandedItemIndex.value == index,
                                     onClick = {
-                                        expandedItemIndex.value = if (expandedItemIndex.value == index) -1 else index
-                                    }
-                                )
+                                        expandedItemIndex.value =
+                                            if (expandedItemIndex.value == index) -1 else index
+                                    })
                             }
                         }
                     }
@@ -440,7 +424,7 @@ fun CalorieTracker(current: Int, target: Int) {
                 drawArc(
                     color = arcColor, // Deep Purple
                     startAngle = 180f,
-                    sweepAngle = sweepAngle,
+                    sweepAngle = sweepAngle.coerceAtMost(180f),
                     useCenter = false,
                     style = Stroke(width = 32.dp.toPx()))
             }
@@ -449,13 +433,37 @@ fun CalorieTracker(current: Int, target: Int) {
             Column(
                 modifier = Modifier.offset(y = (-24).dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = "$current",
-                        fontSize = 36.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary,
-                        textAlign = TextAlign.Center)
+                verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            text = "$current",
+                            fontSize = 36.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary,
+                            textAlign = TextAlign.Center)
+                        if (current > target) {
+                            Text(
+                                text = "+ ${current - target} calories",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color =
+                                    MaterialTheme.colorScheme.tertiary.copy(
+                                        if (current > target) 1f else 0f),
+                                modifier =
+                                    Modifier.align(Alignment.CenterHorizontally)
+                                        .background(
+                                            color =
+                                                MaterialTheme.colorScheme.onTertiary.copy(
+                                                    alpha = if (current < target) 0f else 1f),
+                                            shape =
+                                                RoundedCornerShape(
+                                                    ConstantsStyle.ROUNDED_CORNER_SM_VAL))
+                                        .padding(vertical = 2.dp, horizontal = 8.dp))
+                        }
+                    }
+
                     Text(
                         text = "of $target calories",
                         fontSize = 20.sp,
@@ -468,7 +476,7 @@ fun CalorieTracker(current: Int, target: Int) {
 // TRACK EAT BUTTON
 @Composable
 fun TrackEatButton(onLaunchCamera: () -> Unit = {}) {
-    Row(modifier = Modifier.offset(y = (-100).dp), horizontalArrangement = Arrangement.Center) {
+    Row(modifier = Modifier.offset(y = (-96).dp), horizontalArrangement = Arrangement.Center) {
         Button(
             onClick = { onLaunchCamera() },
             colors =
@@ -535,15 +543,15 @@ fun MacroItem(title: String, progress: Float, target: Float) {
         }
 }
 
-//@Composable
-//fun HistoryItem(
+// @Composable
+// fun HistoryItem(
 //    index: Int,
 //    title: String = "Default Title $index",
 //    text: String,
 //    coinsAdded: Int = 0,
 //    timestamp: Long
 //    //    coinCount: Int
-//) {
+// ) {
 //    val capitalizedTitle = title.split(" ").joinToString(" ") { it.capitalize() }
 //    val timeString =
 //        remember(timestamp) {
@@ -576,7 +584,8 @@ fun MacroItem(title: String, progress: Float, target: Float) {
 //                                        text = timeString,
 //                                        fontSize = 14.sp,
 //                                        color =
-//                                            MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f))
+//                                            MaterialTheme.colorScheme.onPrimary.copy(alpha =
+// 0.7f))
 //                                }
 //                            Text(
 //                                text = "$text Calories",
@@ -596,13 +605,14 @@ fun MacroItem(title: String, progress: Float, target: Float) {
 //                        }
 //                }
 //        }
-//}
+// }
 
 @Composable
 fun HistoryItem(
     index: Int,
     title: String = "Default Title $index",
     calories: String,
+    servingSize: Float = 0f,
     coinsAdded: Int = 0,
     timestamp: Long,
     fat: Float,
@@ -620,150 +630,182 @@ fun HistoryItem(
         }
 
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         color = MaterialTheme.colorScheme.primary,
-        shape = RoundedCornerShape(ConstantsStyle.ROUNDED_CORNER_VAL)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Header row (Title and Timestamp)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = capitalizedTitle,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Text(
-                            text = timeString,
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
-                        )
-                    }
-                    Text(
-                        text = "$calories Calories",
-                        fontSize = 16.sp,
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = if (isExpanded) "Hide Details" else "Click to Show Details",
-                            fontSize = 14.sp,
-                            textDecoration = TextDecoration.Underline,
-                        )
-                        Text(
-                            text = "+ $coinsAdded coins",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                    }
-                }
-            }
-
-            // Expanded details section with hidden info
-            AnimatedVisibility(visible = isExpanded) {
-                Column(
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "Fat:",
-                            fontSize = 14.sp,
-                            modifier = Modifier.align(Alignment.CenterVertically) // Left-aligned text
-                        )
-                        Box(
-                            modifier = Modifier
-                                .weight(1f) // Garis mengisi sisa ruang
-                                .align(Alignment.CenterVertically) // Align center vertically
-                        ) {
-                            Divider(
-                                modifier = Modifier.align(Alignment.CenterStart).padding(start = 4.dp, end = 4.dp, top = 8.dp), // Garis mulai dari kiri
-                                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.25f), // Warna garis
-                                thickness = 1.5.dp // Ketebalan garis
-                            )
-                        }
-                        Text(
-                            text = "$fat g", // Nilai yang ditampilkan di sebelah kanan
-                            fontSize = 14.sp,
-                            modifier = Modifier.align(Alignment.CenterVertically) // Right-aligned text
-                        )
+        shape = RoundedCornerShape(ConstantsStyle.ROUNDED_CORNER_VAL)) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                // Header row (Title and Timestamp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top) {
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = capitalizedTitle,
+                                            fontSize = 20.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            modifier = Modifier.weight(1f))
+                                        Text(
+                                            text = timeString,
+                                            fontSize = 14.sp,
+                                            color =
+                                                MaterialTheme.colorScheme.onPrimary.copy(
+                                                    alpha = 0.7f))
+                                    }
+                                Text(
+                                    text = "$servingSize g",
+                                    fontSize = 16.sp,
+                                )
+                                Text(
+                                    text = "$calories Calories",
+                                    fontSize = 16.sp,
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Text(
+                                            text =
+                                                if (isExpanded) "Hide Details"
+                                                else "Click to Show Details",
+                                            fontSize = 14.sp,
+                                            textDecoration = TextDecoration.Underline,
+                                        )
+                                        Text(
+                                            text = "+ $coinsAdded coins",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                        )
+                                    }
+                            }
                     }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "Protein:",
-                            fontSize = 14.sp,
-                            modifier = Modifier.align(Alignment.CenterVertically) // Left-aligned text
-                        )
-                        Box(
-                            modifier = Modifier
-                                .weight(1f) // Garis mengisi sisa ruang
-                                .align(Alignment.CenterVertically) // Align center vertically
-                        ) {
-                            Divider(
-                                modifier = Modifier.align(Alignment.CenterStart).padding(start = 4.dp, end = 4.dp, top = 8.dp), // Garis mulai dari kiri
-                                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.25f), // Warna garis
-                                thickness = 1.5.dp // Ketebalan garis
-                            )
-                        }
-                        Text(
-                            text = "$protein g", // Nilai yang ditampilkan di sebelah kanan
-                            fontSize = 14.sp,
-                            modifier = Modifier.align(Alignment.CenterVertically) // Right-aligned text
-                        )
-                    }
+                // Expanded details section with hidden info
+                AnimatedVisibility(visible = isExpanded) {
+                    Column(modifier = Modifier.padding(top = 8.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(
+                                    text = "Fat:",
+                                    fontSize = 14.sp,
+                                    modifier =
+                                        Modifier.align(
+                                            Alignment.CenterVertically) // Left-aligned text
+                                    )
+                                Box(
+                                    modifier =
+                                        Modifier.weight(1f) // Garis mengisi sisa ruang
+                                            .align(
+                                                Alignment
+                                                    .CenterVertically) // Align center vertically
+                                    ) {
+                                        Divider(
+                                            modifier =
+                                                Modifier.align(Alignment.CenterStart)
+                                                    .padding(
+                                                        start = 4.dp,
+                                                        end = 4.dp,
+                                                        top = 8.dp), // Garis mulai dari kiri
+                                            color =
+                                                MaterialTheme.colorScheme.secondaryContainer.copy(
+                                                    alpha = 0.25f), // Warna garis
+                                            thickness = 1.5.dp // Ketebalan garis
+                                            )
+                                    }
+                                Text(
+                                    text = "$fat g", // Nilai yang ditampilkan di sebelah kanan
+                                    fontSize = 14.sp,
+                                    modifier =
+                                        Modifier.align(
+                                            Alignment.CenterVertically) // Right-aligned text
+                                    )
+                            }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "Carbs:",
-                            fontSize = 14.sp,
-                            modifier = Modifier.align(Alignment.CenterVertically) // Left-aligned text
-                        )
-                        Box(
-                            modifier = Modifier
-                                .weight(1f) // Garis mengisi sisa ruang
-                                .align(Alignment.CenterVertically) // Align center vertically
-                        ) {
-                            Divider(
-                                modifier = Modifier.align(Alignment.CenterStart).padding(start = 4.dp, end = 4.dp, top = 8.dp), // Garis mulai dari kiri
-                                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.25f), // Warna garis
-                                thickness = 1.5.dp // Ketebalan garis
-                            )
-                        }
-                        Text(
-                            text = "$carbs g", // Nilai yang ditampilkan di sebelah kanan
-                            fontSize = 14.sp,
-                            modifier = Modifier.align(Alignment.CenterVertically) // Right-aligned text
-                        )
-                    }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(
+                                    text = "Protein:",
+                                    fontSize = 14.sp,
+                                    modifier =
+                                        Modifier.align(
+                                            Alignment.CenterVertically) // Left-aligned text
+                                    )
+                                Box(
+                                    modifier =
+                                        Modifier.weight(1f) // Garis mengisi sisa ruang
+                                            .align(
+                                                Alignment
+                                                    .CenterVertically) // Align center vertically
+                                    ) {
+                                        Divider(
+                                            modifier =
+                                                Modifier.align(Alignment.CenterStart)
+                                                    .padding(
+                                                        start = 4.dp,
+                                                        end = 4.dp,
+                                                        top = 8.dp), // Garis mulai dari kiri
+                                            color =
+                                                MaterialTheme.colorScheme.secondaryContainer.copy(
+                                                    alpha = 0.25f), // Warna garis
+                                            thickness = 1.5.dp // Ketebalan garis
+                                            )
+                                    }
+                                Text(
+                                    text = "$protein g", // Nilai yang ditampilkan di sebelah kanan
+                                    fontSize = 14.sp,
+                                    modifier =
+                                        Modifier.align(
+                                            Alignment.CenterVertically) // Right-aligned text
+                                    )
+                            }
 
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(
+                                    text = "Carbs:",
+                                    fontSize = 14.sp,
+                                    modifier =
+                                        Modifier.align(
+                                            Alignment.CenterVertically) // Left-aligned text
+                                    )
+                                Box(
+                                    modifier =
+                                        Modifier.weight(1f) // Garis mengisi sisa ruang
+                                            .align(
+                                                Alignment
+                                                    .CenterVertically) // Align center vertically
+                                    ) {
+                                        Divider(
+                                            modifier =
+                                                Modifier.align(Alignment.CenterStart)
+                                                    .padding(
+                                                        start = 4.dp,
+                                                        end = 4.dp,
+                                                        top = 8.dp), // Garis mulai dari kiri
+                                            color =
+                                                MaterialTheme.colorScheme.secondaryContainer.copy(
+                                                    alpha = 0.25f), // Warna garis
+                                            thickness = 1.5.dp // Ketebalan garis
+                                            )
+                                    }
+                                Text(
+                                    text = "$carbs g", // Nilai yang ditampilkan di sebelah kanan
+                                    fontSize = 14.sp,
+                                    modifier =
+                                        Modifier.align(
+                                            Alignment.CenterVertically) // Right-aligned text
+                                    )
+                            }
+                    }
                 }
             }
         }
-    }
 }
