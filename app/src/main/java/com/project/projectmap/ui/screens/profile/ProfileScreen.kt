@@ -1,6 +1,7 @@
 package com.project.projectmap.ui.screens.profile
 
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -46,6 +47,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -53,6 +55,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.project.projectmap.R
@@ -101,6 +104,8 @@ fun ProfileScreen(onClose: () -> Unit, onLogout: () -> Unit) {
                 userCoin = user.profile.coin
                 userPhotoUrl = user.profile.photoUrl
             }
+
+            Log.d("ProfileScreen", "User data loaded : $userName, $userEmail, $userAge, $userGender, $reminderInterval, $userCoin, $userPhotoUrl")
         }
     }
 
@@ -123,11 +128,16 @@ fun ProfileScreen(onClose: () -> Unit, onLogout: () -> Unit) {
             // Profile Photo with Edit Button
             Box(contentAlignment = Alignment.BottomEnd, modifier = Modifier.size(120.dp)) {
                 AsyncImage(
-                    model = userPhotoUrl.ifEmpty { R.drawable.baseline_person_24 },
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(userPhotoUrl)
+                        .build(),
                     contentDescription = "Profile Picture",
-                    modifier = Modifier.size(120.dp).clip(CircleShape).background(Color.Gray),
-                    contentScale = ContentScale.Crop)
-
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(CircleShape)
+                        .background(Color.Gray),
+                    contentScale = ContentScale.Crop
+                )
                 IconButton(
                     onClick = { photoPickerLauncher.launch("image/*") },
                     modifier =

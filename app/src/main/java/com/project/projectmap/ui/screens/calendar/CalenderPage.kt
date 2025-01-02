@@ -100,10 +100,12 @@ fun CalendarPage(onClose: () -> Unit) {
                 totalCalories = dailyIntake.totalCalories
             } else {
                 dailyHistory = emptyList()
+                totalCalories = 0f
             }
             Log.d("CalendarPage", "Daily History: $dailyIntake")
         } catch (e: Exception) {
             errorMessage = "Error fetching data: ${e.message}"
+
         } finally {
             isLoading = false
         }
