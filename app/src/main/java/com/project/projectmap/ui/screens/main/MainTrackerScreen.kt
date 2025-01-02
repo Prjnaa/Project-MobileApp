@@ -44,13 +44,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
@@ -69,20 +74,17 @@ fun MainTrackerScreen(
     onNavigateToProfile: () -> Unit = {},
     onNavigateToNewTarget: () -> Unit = {}
 ) {
-
     val viewModel = MainTrackerViewModel()
-
     val user by viewModel.user.collectAsState()
     val intake by viewModel.dailyIntake.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+
     // Daftar item intake
     val items = intake.items.values.toList()
 
     // Dapatkan ID item yang di-equip dari Firestore
     val equippedItemId = user.equippedItem
-
-    // Tentukan gambar aksesoris berdasarkan equippedItemId
     val accessoryRes = when (equippedItemId) {
         "tanaman1" -> R.drawable.tanaman1
         "tanaman2" -> R.drawable.tanaman2
@@ -90,19 +92,46 @@ fun MainTrackerScreen(
         else -> null
     }
 
-    Column(
-        modifier =
-            Modifier.fillMaxSize()
-                .background(color = MaterialTheme.colorScheme.background)
+    val scrollState = rememberScrollState()
+
+    Box(modifier = Modifier.fillMaxSize()) {
+
+        Image(
+            painter = painterResource(id = R.drawable.background),
+            contentDescription = "Moving Background",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .background(colorResource(id = R.color.purple_200))
+                .matchParentSize()
+                .graphicsLayer {
+                    // 1) Perbesar 1.3x
+                    scaleX = 1.3f
+                    scaleY = 1.3f
+
+                    // 2) Pastikan pivot-nya di top-left (0f, 0f),
+                    //    sehingga yang "dikunci" adalah sudut kiri atas.
+                    transformOrigin = TransformOrigin(0f, 0f)
+
+                    // 3) Geser = -scrollState.value (1:1) plus offset statis
+                    translationY = -scrollState.value.toFloat() - 600f
+                }
+        )
+
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
                 .padding(ConstantsStyle.APP_PADDING_VAL)
-                .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                .verticalScroll(scrollState),                      // <-- Pakai scrollState yg sama
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
             user?.let { userInfo ->
                 TopBar(
                     onNavToBadges = onNavigateToBadges,
                     onNavToProfile = onNavigateToProfile,
                     userName = userInfo.profile.name,
-                    usersPoints = userInfo.profile.coin)
+                    usersPoints = userInfo.profile.coin
+                )
             }
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
@@ -110,7 +139,8 @@ fun MainTrackerScreen(
                 Text(
                     errorMessage ?: "Error",
                     color = Color.Red,
-                    modifier = Modifier.align(Alignment.CenterHorizontally))
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
             } else {
                 intake?.let { data ->
                     CurrentStats(
@@ -119,20 +149,24 @@ fun MainTrackerScreen(
                         fatProgress = data.totalFat,
                         carbsTarget = user.targets?.carbsTarget ?: 0f,
                         proteinTarget = user.targets?.proteinTarget ?: 0f,
-                        fatTarget = user.targets?.fatTarget ?: 0f)
+                        fatTarget = user.targets?.fatTarget ?: 0f
+                    )
                 }
                 user.targets?.let { targetData ->
                     Tracker(
                         currentCalories = intake?.totalCalories?.toInt() ?: 0,
                         targetCalories = targetData.calorieTarget.toInt(),
                         onNavToNewTarget = onNavigateToNewTarget,
-                        equippedItemDrawableRes = accessoryRes)
+                        equippedItemDrawableRes = accessoryRes
+                    )
                 }
             }
 
             HistoryList(onNavToCalendar = onNavigateToCalendar, items = items)
         }
+    }
 }
+
 
 @Composable
 fun TopBar(
